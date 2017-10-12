@@ -122,13 +122,13 @@ function pcpay_plugin_init()
                     'type' => 'multiselect',
                     'description' => $this->tran('Press CTRL and the right button on the mouse to select multi payments.'),
                     'options' => array(
-                        'Credit' => $this->get_payment_desc('Credit'),
-                        'Credit_3' => $this->get_payment_desc('Credit_3'),
-                        'Credit_6' => $this->get_payment_desc('Credit_6'),
-                        'Credit_12' => $this->get_payment_desc('Credit_12'),
-                        'ATM' => $this->get_payment_desc('ATM'),
-                        'EACH' => $this->get_payment_desc('EACH'),
-                        'ACCT' => $this->get_payment_desc('ACCT')
+                        'Credit' => __('Credit'),
+                        'Credit_3' => __('Credit_3'),
+                        'Credit_6' => __('Credit_6'),
+                        'Credit_12' => __('Credit_12'),
+                        'ATM' => __('ATM'),
+                        'EACH' => __('EACH'),
+                        'ACCT' => __('ACCT')
                     )
                 ),
                 'atm_expiredate' => array(
