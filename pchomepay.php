@@ -19,21 +19,36 @@ function pchomepay_gateway_init() {
         return;
     }
 
-    class WC_Gateway_Pchomepay_Gateway extends WC_Payment_Gateway {
+    class WC_Pchomepay_Gateway extends WC_Payment_Gateway {
 
       public function __construct() {
-        $this->id = 'PCHomePay';
+        $this->id = 'pchomepay';
         $this->icon = apply_filters('woocommerce_pchomepay_icon', plugins_url('images/pchomepay_logo.png', __FILE__));;
         $this->has_fields = false;
-        $this->method_title = 'PCHomePay';
+        $this->method_title = __('PCHomePay', 'woocommerce');
         $this->method_description = '透過 PCHomePay 付款。<br>會連結到 PCHomePay 付款頁面。';
 
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->title = $this->get_option('title');
+        // Define user set variables
+        $this->title = $this->get_option['title'];
+        $this->description = $this->get_option['description'];
+        $this->app_id = trim($this->get_option['app_id']);
+        $this->secret = trim($this->get_option['secret']);
+        $this->atm_expiredate = $this->get_option['atm_expiredate'];
+        $this->test_mode = $this->get_option['test_mode'];
+        $this->notify_url = add_query_arg('wc-api', 'WC_pahomepay', home_url('/')) . '&callback=return';
+
+        // Test Mode
+        if ($this->test_mode == 'yes') {
+            $this->gateway = "https://ccore.spgateway.com/MPG/mpg_gateway"; //測試網址
+        } else {
+            $this->gateway = "https://core.spgateway.com/MPG/mpg_gateway"; //正式網址
+        }
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
+        add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
 
       }
 
@@ -98,7 +113,7 @@ function pchomepay_gateway_init() {
         );
       }
 
-      function admin_options() {
+      public function admin_options() {
         ?>
         <h2><?php _e('PCHomePay 收款模組','woocommerce'); ?></h2>
         <table class="form-table">
@@ -106,11 +121,11 @@ function pchomepay_gateway_init() {
         </table> <?php
       }
 
-      function process_payment($order_id) {
+      public function process_payment($order_id) {
         global $woocommerce;
-        $order = new WC_Order( $order_id );
+        $order = new WC_Order($order_id);
         // 更新訂單狀態為等待中 (等待第三方支付網站返回)
-        $order->update_status('on-hold', __( 'Awaiting PCHomePay payment', 'woocommerce' ));
+        $order->update_status('on-hold', __('Awaiting PCHomePay payment', 'woocommerce'));
         // 減少庫存
         $order->reduce_order_stock();
         // 清空購物車
@@ -118,16 +133,16 @@ function pchomepay_gateway_init() {
         // 返回感謝購物頁面跳轉
         return array(
           'result' => 'success',
-          'redirect' => $this->get_return_url( $order )
+          'redirect' => $this->get_return_url($order)
         );
       }
 
     }
 
-    function add_pchomepay_gateway_class( $methods ) {
-      $methods[] = 'WC_Gateway_Pchomepay_Gateway';
+    function add_pchomepay_gateway_class($methods) {
+      $methods[] = 'WC_Pchomepay_Gateway';
       return $methods;
     }
 
-add_filter( 'woocommerce_payment_gateways', 'add_pchomepay_gateway_class' );
+add_filter('woocommerce_payment_gateways', 'add_pchomepay_gateway_class');
 }
