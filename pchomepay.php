@@ -42,6 +42,7 @@ function pchomepay_gateway_init()
             $this->atm_expiredate = $this->get_option('atm_expiredate');
             $this->test_mode = $this->get_option('test_mode');
             $this->notify_url = add_query_arg('wc-api', 'WC_pahomepay', home_url('/')) . '&callback=return';
+            $this->payment_methods = $this->get_option('payment_methods');
 
             // Test Mode
             if ($this->test_mode == 'yes') {
@@ -128,18 +129,25 @@ function pchomepay_gateway_init()
             </table> <?php
         }
 
+
+
+
+
         ////////////////////////付款步驟////////////////////////////
 
+
+
+
+
         //Redirect to PCHomePay
-        public function receipt_page($order)
+        public function receipt_page($order_id)
         {
             # Clean the cart
             global $woocommerce;
             $woocommerce->cart->empty_cart();
-            $order = new WC_Order($order);
+            $order = new WC_Order($order_id);
 
             $pchomepay_args = $this->get_pchomepay_args($order);
-
 
         }
 
@@ -149,7 +157,16 @@ function pchomepay_gateway_init()
 
             $app_id = $this->app_id;
             $secret = $this->secret;
+
             $order_id = $order->id;
+            $pay_type = $this->payment_methods;
+            $amount = $order->get_total();
+            $return_url = $this->get_return_url($order);
+            $buyer_email = $order->billing_email;
+
+            var_dump($order->get_product_id());
+            var_dump($order->get_items('line_item')['name']);
+            exit();
         }
 
 
@@ -158,15 +175,15 @@ function pchomepay_gateway_init()
             global $woocommerce;
             $order = new WC_Order($order_id);
             // 更新訂單狀態為等待中 (等待第三方支付網站返回)
-            $order->update_status('on-hold', __('Awaiting PCHomePay payment', 'woocommerce'));
+            $order->update_status('pending', __('Awaiting PCHomePay payment', 'woocommerce'));
             // 減少庫存
-            $order->reduce_order_stock();
+//            $order->reduce_order_stock();
             // 清空購物車
-            $woocommerce->cart->empty_cart();
+//            $woocommerce->cart->empty_cart();
             // 返回感謝購物頁面跳轉
             return array(
                 'result' => 'success',
-                'redirect' => $this->get_return_url($order)
+                'redirect' => $order->get_checkout_payment_url(true)
             );
         }
 
