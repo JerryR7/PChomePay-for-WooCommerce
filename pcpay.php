@@ -199,9 +199,6 @@ function pcpay_plugin_init()
                 $pcpay_args_1["Price$item_cnt"] = $item_value['line_subtotal'] / $item_value['qty'];
                 $pcpay_args_1["Qty$item_cnt"] = $item_value['qty'];
 
-                var_dump($pcpay_args_1);
-                exit();
-
                 $item_cnt++;
             }
 
@@ -433,7 +430,7 @@ function pcpay_plugin_init()
          * @return string   translate result
          */
         private function tran($content) {
-            return __($content, $this->pcpay_domain);
+            return __($content, $this->domain);
 //            return $content;
         }
 
@@ -503,7 +500,7 @@ function pcpay_plugin_init()
          */
         private function is_order_complete($order) {
             $status = '';
-            $status = (method_exists($Order,'get_status') == true )? $order->get_status(): $order->status;
+            $status = (method_exists($order,'get_status') == true )? $order->get_status(): $order->status;
 
             if ($status == 'pending') {
                 return false;
