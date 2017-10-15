@@ -136,9 +136,6 @@ function pchomepay_gateway_init()
         ////////////////////////付款步驟////////////////////////////
 
 
-
-
-
         //Redirect to PCHomePay
         public function receipt_page($order_id)
         {
@@ -149,24 +146,77 @@ function pchomepay_gateway_init()
 
             $pchomepay_args = $this->get_pchomepay_args($order);
 
+            $app_id = $this->app_id;
+            $secret = $this->secret;
+
+
+
+
         }
 
         private function get_pchomepay_args($order)
         {
             global $woocommerce;
 
-            $app_id = $this->app_id;
-            $secret = $this->secret;
-
             $order_id = $order->id;
             $pay_type = $this->payment_methods;
             $amount = $order->get_total();
             $return_url = $this->get_return_url($order);
             $buyer_email = $order->billing_email;
+            $atm_info = (object)['expire_days' => $this->atm_expiredate];
 
-            var_dump($order->get_product_id());
-            var_dump($order->get_items('line_item')['name']);
-            exit();
+            $card_info = [];
+
+            foreach ($pay_type as $items) {
+                switch ($items) {
+                    case 'Credit_3' :
+                        $card_installment['installment'] = 3;
+                        $card_installment['rate'] = null;
+                        break;
+                    case 'Credit_6' :
+                        $card_installment['installment'] = 6;
+                        $card_installment['rate'] = 0.02;
+                        break;
+                    case 'Credit_12' :
+                        $card_installment['installment'] = 12;
+                        $card_installment['rate'] = 0.03;
+                        break;
+                    default :
+                        unset($card_installment);
+                        break;
+                }
+                if ($card_installment) {
+                    $card_info[] = (object)$card_installment;
+                }
+            }
+
+            $items = [];
+
+            $order_items = $order->get_items();
+            foreach ($order_items as $item) {
+                $product = [];
+                $order_item = new WC_Order_Item_Product($item);
+                $product_id = ($order_item->get_product_id());
+                $product['name'] = $order_item->get_name();
+                $product['url'] = get_permalink($product_id);
+
+                $items[] = (object)$product;
+            }
+
+            $pchomepay_args = [
+                'order_id' => $order_id,
+                'pay_type' => $pay_type,
+                'amount' => $amount,
+                'return_url' => $return_url,
+                'items' => $items,
+                'buyer_email' => $buyer_email,
+                'atm_info' => $atm_info,
+                'card_info' => $card_info
+            ];
+
+            $pchomepay_args = apply_filters('woocommerce_spgateway_args', $pchomepay_args);
+
+            return $pchomepay_args;
         }
 
 
