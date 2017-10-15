@@ -6,7 +6,6 @@
  * Time: 18:31
  */
 
-namespace PCPayClient\Utils;
 
 
 use RuntimeException;

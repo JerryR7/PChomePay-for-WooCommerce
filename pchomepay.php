@@ -47,10 +47,10 @@ function pchomepay_gateway_init()
             // Test Mode
             if ($this->test_mode == 'yes') {
                 //SandBox Mode
-                $this->gateway = "https://sandbox-api-pchomepay.com.tw/v1/";
+                $this->gateway = "https://sandbox-api.pchomepay.com.tw/v1/";
             } else {
                 //Production Mode
-                $this->gateway = "https://api-pchomepay.com.tw/v1/";
+                $this->gateway = "https://api.pchomepay.com.tw/v1/";
             }
 
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
@@ -146,8 +146,23 @@ function pchomepay_gateway_init()
 
             $pchomepay_args = $this->get_pchomepay_args($order);
 
-            $app_id = $this->app_id;
-            $secret = $this->secret;
+            $userAuth = "{$this->app_id}:{$this->secret}";
+
+            $tokenURL= $this->gateway . "/token";
+
+            if (!class_exists('CurlTool')) {
+                if (!require(plugin_dir_path(__FILE__) . '/src/CurlTool.php')) {
+                    throw new Exception(__('CurlTool module missed.', 'woocommerce'));
+                }
+            }
+
+            $curl = CurlTool::getInstance();
+            $body = $curl->postToken($userAuth, $tokenURL);
+            var_dump($body);
+            exit();
+            $this->handleResult($body);
+            $this->token = new PPToken($body);
+            $this->tokenStorage->saveTokenStr($this->token->getJson());
 
 
 
