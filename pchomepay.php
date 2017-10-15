@@ -103,7 +103,7 @@ function pchomepay_gateway_init()
                     'type' => 'multiselect',
                     'description' => __('Press CTRL and the right button on the mouse to select multi payments.', 'woocommerce'),
                     'options' => array(
-                        'Credit' => __('Credit'),
+                        'CARD' => __('CARD'),
                         'ATM' => __('ATM'),
                         'EACH' => __('EACH'),
                         'ACCT' => __('ACCT')
@@ -174,6 +174,7 @@ function pchomepay_gateway_init()
             $result = $curl->postAPI($token, $payment_url, json_encode($pchomepay_args));
             $this->handleResult($result);
 
+            var_dump(json_encode($pchomepay_args));
             var_dump($result);
             exit();
 
@@ -187,10 +188,10 @@ function pchomepay_gateway_init()
 
             $order_id = (string)$order->id;
             $pay_type = $this->payment_methods;
-            $amount = $order->get_total();
+            $amount = ceil($order->get_total());
             $return_url = $this->get_return_url($order);
             $buyer_email = $order->billing_email;
-            $atm_info = (object)['expire_days' => $this->atm_expiredate];
+            $atm_info = (object)['expire_days' => (int)$this->atm_expiredate];
 
             $card_info = [];
 
@@ -198,15 +199,15 @@ function pchomepay_gateway_init()
                 switch ($items) {
                     case 'Credit_3' :
                         $card_installment['installment'] = 3;
-                        $card_installment['rate'] = null;
+                        $card_installment['rate'] = 0.02;
                         break;
                     case 'Credit_6' :
                         $card_installment['installment'] = 6;
-                        $card_installment['rate'] = 0.02;
+                        $card_installment['rate'] = 0.03;
                         break;
                     case 'Credit_12' :
                         $card_installment['installment'] = 12;
-                        $card_installment['rate'] = 0.03;
+                        $card_installment['rate'] = 0.04;
                         break;
                     default :
                         unset($card_installment);
