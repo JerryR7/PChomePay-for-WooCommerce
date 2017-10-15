@@ -43,6 +43,7 @@ function pchomepay_gateway_init()
             $this->test_mode = $this->get_option('test_mode');
             $this->notify_url = add_query_arg('wc-api', 'WC_pahomepay', home_url('/')) . '&callback=return';
             $this->payment_methods = $this->get_option('payment_methods');
+            $this->card_installment = $this->get_option('card_installment');
 
             // Test Mode
             if ($this->test_mode == 'yes') {
@@ -103,12 +104,20 @@ function pchomepay_gateway_init()
                     'description' => __('Press CTRL and the right button on the mouse to select multi payments.', 'woocommerce'),
                     'options' => array(
                         'Credit' => __('Credit'),
-                        'Credit_3' => __('Credit_3'),
-                        'Credit_6' => __('Credit_6'),
-                        'Credit_12' => __('Credit_12'),
                         'ATM' => __('ATM'),
                         'EACH' => __('EACH'),
                         'ACCT' => __('ACCT')
+                    )
+                ),
+                'card_installment' => array(
+                    'title' => __('Card Installment', 'woocommerce'),
+                    'type' => 'multiselect',
+                    'description' => __('Card Installment Setting', 'woocommerce'),
+                    'options' => array(
+                        'Credit_0' => __('Credit'),
+                        'Credit_3' => __('Credit_3'),
+                        'Credit_6' => __('Credit_6'),
+                        'Credit_12' => __('Credit_12'),
                     )
                 ),
                 'atm_expiredate' => array(
@@ -148,7 +157,8 @@ function pchomepay_gateway_init()
 
             $userAuth = "{$this->app_id}:{$this->secret}";
 
-            $tokenURL= $this->gateway . "/token";
+            $token_url = $this->gateway . "/token";
+            $payment_url = $this->gateway . "/payment";
 
             if (!class_exists('CurlTool')) {
                 if (!require(plugin_dir_path(__FILE__) . '/src/CurlTool.php')) {
@@ -157,13 +167,15 @@ function pchomepay_gateway_init()
             }
 
             $curl = CurlTool::getInstance();
-            $body = $curl->postToken($userAuth, $tokenURL);
-            var_dump($body);
-            exit();
-            $this->handleResult($body);
-            $this->token = new PPToken($body);
-            $this->tokenStorage->saveTokenStr($this->token->getJson());
+            $tokenJson = $curl->postToken($userAuth, $token_url);
+            $this->handleResult($tokenJson);
+            $token = json_decode($tokenJson)->token;
 
+            $result = $curl->postAPI($token, $payment_url, json_encode($pchomepay_args));
+            $this->handleResult($result);
+
+            var_dump($result);
+            exit();
 
 
 
@@ -173,7 +185,7 @@ function pchomepay_gateway_init()
         {
             global $woocommerce;
 
-            $order_id = $order->id;
+            $order_id = (string)$order->id;
             $pay_type = $this->payment_methods;
             $amount = $order->get_total();
             $return_url = $this->get_return_url($order);
@@ -182,7 +194,7 @@ function pchomepay_gateway_init()
 
             $card_info = [];
 
-            foreach ($pay_type as $items) {
+            foreach ($this->card_installment as $items) {
                 switch ($items) {
                     case 'Credit_3' :
                         $card_installment['installment'] = 3;
@@ -234,6 +246,34 @@ function pchomepay_gateway_init()
             return $pchomepay_args;
         }
 
+        private function handleResult($result)
+        {
+            $jsonErrMap = [
+                JSON_ERROR_NONE => 'No error has occurred',
+                JSON_ERROR_DEPTH => 'The maximum stack depth has been exceeded',
+                JSON_ERROR_STATE_MISMATCH => 'Invalid or malformed JSON',
+                JSON_ERROR_CTRL_CHAR => 'Control character error, possibly incorrectly encoded',
+                JSON_ERROR_SYNTAX => 'Syntax error',
+                JSON_ERROR_UTF8 => 'Malformed UTF-8 characters, possibly incorrectly encoded	PHP 5.3.3',
+                JSON_ERROR_RECURSION => 'One or more recursive references in the value to be encoded	PHP 5.5.0',
+                JSON_ERROR_INF_OR_NAN => 'One or more NAN or INF values in the value to be encoded	PHP 5.5.0',
+                JSON_ERROR_UNSUPPORTED_TYPE => 'A value of a type that cannot be encoded was given	PHP 5.5.0'
+            ];
+
+            $obj = json_decode($result);
+
+            $err = json_last_error();
+
+            if ($err) {
+                $errStr = "($err)" . $jsonErrMap[$err];
+                if (empty($errStr)) {
+                    $errStr = " - unknow error, error code ({$err})";
+                }
+                throw new Exception("server result error($err) {$errStr}:$result");
+            }
+
+            return $obj;
+        }
 
         public function process_payment($order_id)
         {
