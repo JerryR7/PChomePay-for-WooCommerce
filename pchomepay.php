@@ -114,7 +114,7 @@ function pchomepay_gateway_init()
                 'card_installment' => array(
                     'title' => __('Card Installment', 'woocommerce'),
                     'type' => 'multiselect',
-                    'description' => __('Card Installment Setting', 'woocommerce'),
+                    'description' => __('Card Installment Setting<br>Press CTRL and the right button on the mouse to select multi payments.', 'woocommerce'),
                     'options' => array(
                         'CRD_0' => __('Credit', 'woocommerce'),
                         'CRD_3' => __('Credit_3', 'woocommerce'),
