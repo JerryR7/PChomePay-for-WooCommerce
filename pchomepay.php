@@ -179,7 +179,7 @@ function pchomepay_gateway_init()
 
             $curl = CurlTool::getInstance();
             $tokenJson = $curl->postToken($userAuth, $token_gateway);
-            $this->handleResult($tokenJson);
+//            $this->handleResult($tokenJson);
             $token = json_decode($tokenJson)->token;
 
             $result = $curl->postAPI($token, $payment_gateway, json_encode($pchomepay_args));
@@ -291,6 +291,11 @@ function pchomepay_gateway_init()
             $obj = json_decode($result);
 
             $err = json_last_error();
+            var_dump($result);
+            var_dump($obj);
+            var_dump($err);
+            echo('114.44.115.208');
+            exit();
 
             if ($err) {
                 $errStr = "($err)" . $jsonErrMap[$err];
@@ -312,7 +317,7 @@ function pchomepay_gateway_init()
             // 減少庫存
             $order->reduce_order_stock();
             // 清空購物車
-//            $woocommerce->cart->empty_cart();
+            $woocommerce->cart->empty_cart();
             // 返回感謝購物頁面跳轉
             return array(
                 'result' => 'success',
