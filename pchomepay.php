@@ -44,6 +44,7 @@ function pchomepay_gateway_init()
             $this->notify_url = add_query_arg('wc-api', 'WC_pahomepay', home_url('/')) . '&callback=return';
             $this->payment_methods = $this->get_option('payment_methods');
             $this->card_installment = $this->get_option('card_installment');
+            $this->card_rate = $this->get_option('card_rate');
 
             // Test Mode
             if ($this->test_mode == 'yes') {
@@ -114,10 +115,19 @@ function pchomepay_gateway_init()
                     'type' => 'multiselect',
                     'description' => __('Card Installment Setting', 'woocommerce'),
                     'options' => array(
-                        'Credit_0' => __('Credit'),
-                        'Credit_3' => __('Credit_3'),
-                        'Credit_6' => __('Credit_6'),
-                        'Credit_12' => __('Credit_12'),
+                        'CRD_0' => __('Credit', 'woocommerce'),
+                        'CRD_3' => __('Credit_3', 'woocommerce'),
+                        'CRD_6' => __('Credit_6', 'woocommerce'),
+                        'CRD_12' => __('Credit_12', 'woocommerce'),
+                    )
+                ),
+                'card_rate' => array(
+                    'title' => __('Card Installment', 'woocommerce'),
+                    'type' => 'select',
+                    'description' => __('Card Rate Setting', 'woocommerce'),
+                    'options' => array(
+                        '0' => __('Zero-percent Interest Rate', 'woocommerce'),
+                        '1' => __('General Interest Rate', 'woocommerce')
                     )
                 ),
                 'atm_expiredate' => array(
@@ -153,7 +163,7 @@ function pchomepay_gateway_init()
             $woocommerce->cart->empty_cart();
             $order = new WC_Order($order_id);
 
-            $pchomepay_args = $this->get_pchomepay_args($order);
+            $pchomepay_args = (object)$this->get_pchomepay_args($order);
 
             $userAuth = "{$this->app_id}:{$this->secret}";
 
@@ -186,34 +196,35 @@ function pchomepay_gateway_init()
         {
             global $woocommerce;
 
-            $order_id = (string)$order->id;
+            $order_id = (string)$order->get_order_number();
             $pay_type = $this->payment_methods;
             $amount = ceil($order->get_total());
             $return_url = $this->get_return_url($order);
-            $buyer_email = $order->billing_email;
+            $buyer_email = $order->get_billing_email();
             $atm_info = (object)['expire_days' => (int)$this->atm_expiredate];
 
             $card_info = [];
+            $card_rate = $this->card_rate == 1 ? null : 0;
 
             foreach ($this->card_installment as $items) {
                 switch ($items) {
-                    case 'Credit_3' :
+                    case 'CRD_3' :
                         $card_installment['installment'] = 3;
-                        $card_installment['rate'] = 0.02;
+                        $card_installment['rate'] = $card_rate;
                         break;
-                    case 'Credit_6' :
+                    case 'CRD_6' :
                         $card_installment['installment'] = 6;
-                        $card_installment['rate'] = 0.03;
+                        $card_installment['rate'] = $card_rate;
                         break;
-                    case 'Credit_12' :
+                    case 'CRD_12' :
                         $card_installment['installment'] = 12;
-                        $card_installment['rate'] = 0.04;
+                        $card_installment['rate'] = $card_rate;
                         break;
                     default :
                         unset($card_installment);
                         break;
                 }
-                if ($card_installment) {
+                if (isset($card_installment)) {
                     $card_info[] = (object)$card_installment;
                 }
             }
