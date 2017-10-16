@@ -57,6 +57,7 @@ function pchomepay_gateway_init()
 
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
             add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
+            add_action('woocommerce_api_wc_' . $this->id, array($this, 'receive_response'));
 
         }
 
@@ -167,8 +168,8 @@ function pchomepay_gateway_init()
 
             $userAuth = "{$this->app_id}:{$this->secret}";
 
-            $token_url = $this->gateway . "/token";
-            $payment_url = $this->gateway . "/payment";
+            $token_gateway = $this->gateway . "/token";
+            $payment_gateway = $this->gateway . "/payment";
 
             if (!class_exists('CurlTool')) {
                 if (!require(plugin_dir_path(__FILE__) . '/src/CurlTool.php')) {
@@ -177,19 +178,32 @@ function pchomepay_gateway_init()
             }
 
             $curl = CurlTool::getInstance();
-            $tokenJson = $curl->postToken($userAuth, $token_url);
+            $tokenJson = $curl->postToken($userAuth, $token_gateway);
             $this->handleResult($tokenJson);
             $token = json_decode($tokenJson)->token;
 
-            $result = $curl->postAPI($token, $payment_url, json_encode($pchomepay_args));
+            $result = $curl->postAPI($token, $payment_gateway, json_encode($pchomepay_args));
             $this->handleResult($result);
 
-            var_dump(json_encode($pchomepay_args));
-            var_dump($result);
+            $payment_url = "'" . json_decode($result)->payment_url . "'";
+
+            echo '<p><span id="timer">3</span> 秒後會自動跳轉到 PCHomePay 付款頁面，或者按下方按鈕直接前往<br></p>
+                  <input type="submit" class="button-alt" id="submit_pchomepay" value="前往 PCHomePay 付款頁面" onclick="location.href=' . $payment_url . '" />' .
+                  "<script>
+                      function countDown()
+                      {
+                          var x = document.getElementById(\"timer\");
+                          x.innerHTML = x.innerHTML - 1;
+
+                          if (x.innerHTML == 0){
+                              window.location = $payment_url;
+                          } else {
+                          setTimeout(\"countDown()\", 1000);
+                          }
+                      }
+                      setTimeout(\"countDown()\", 1000);
+                  </script>";
             exit();
-
-
-
         }
 
         private function get_pchomepay_args($order)
@@ -200,6 +214,7 @@ function pchomepay_gateway_init()
             $pay_type = $this->payment_methods;
             $amount = ceil($order->get_total());
             $return_url = $this->get_return_url($order);
+            $notify_url = $this->notify_url;
             $buyer_email = $order->get_billing_email();
             $atm_info = (object)['expire_days' => (int)$this->atm_expiredate];
 
@@ -247,6 +262,7 @@ function pchomepay_gateway_init()
                 'pay_type' => $pay_type,
                 'amount' => $amount,
                 'return_url' => $return_url,
+                'notify_url' => $notify_url,
                 'items' => $items,
                 'buyer_email' => $buyer_email,
                 'atm_info' => $atm_info,
@@ -294,7 +310,7 @@ function pchomepay_gateway_init()
             // 更新訂單狀態為等待中 (等待第三方支付網站返回)
             $order->update_status('pending', __('Awaiting PCHomePay payment', 'woocommerce'));
             // 減少庫存
-//            $order->reduce_order_stock();
+            $order->reduce_order_stock();
             // 清空購物車
 //            $woocommerce->cart->empty_cart();
             // 返回感謝購物頁面跳轉
@@ -304,6 +320,13 @@ function pchomepay_gateway_init()
             );
         }
 
+    }
+
+    function receive_response()
+    {
+        $result = $_REQUEST;
+        var_dump($result);
+        exit();
     }
 
     function add_pchomepay_gateway_class($methods)
