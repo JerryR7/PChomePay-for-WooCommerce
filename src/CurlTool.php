@@ -7,9 +7,6 @@
  */
 
 
-
-use RuntimeException;
-
 class CurlTool
 {
     public $ignoreSSL = false;

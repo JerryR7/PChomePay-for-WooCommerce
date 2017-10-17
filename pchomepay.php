@@ -20,7 +20,7 @@ function pchomepay_gateway_init()
         return;
     }
 
-    class WC_Pchomepay_Gateway extends WC_Payment_Gateway
+    class WC_Gateway_Pchomepay extends WC_Payment_Gateway
     {
 
         public function __construct()
@@ -41,7 +41,7 @@ function pchomepay_gateway_init()
             $this->secret = trim($this->get_option('secret'));
             $this->atm_expiredate = $this->get_option('atm_expiredate');
             $this->test_mode = $this->get_option('test_mode');
-            $this->notify_url = add_query_arg('wc-api', 'WC_pahomepay', home_url('/')) . '&callback=return';
+            $this->notify_url = WC()->api_request_url(get_class($this));
             $this->payment_methods = $this->get_option('payment_methods');
             $this->card_installment = $this->get_option('card_installment');
             $this->card_rate = $this->get_option('card_rate');
@@ -57,8 +57,7 @@ function pchomepay_gateway_init()
 
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
             add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
-            add_action('woocommerce_api_wc_' . $this->id, array($this, 'receive_response'));
-
+            add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'receive_response'));
         }
 
         public function init_form_fields()
@@ -159,37 +158,38 @@ function pchomepay_gateway_init()
         //Redirect to PCHomePay
         public function receipt_page($order_id)
         {
-            # Clean the cart
-            global $woocommerce;
-            $woocommerce->cart->empty_cart();
-            $order = new WC_Order($order_id);
+            try {
+                # Clean the cart
+                global $woocommerce;
+                $woocommerce->cart->empty_cart();
+                $order = new WC_Order($order_id);
 
-            $pchomepay_args = (object)$this->get_pchomepay_args($order);
+                $pchomepay_args = (object)$this->get_pchomepay_args($order);
 
-            $userAuth = "{$this->app_id}:{$this->secret}";
+                $userAuth = "{$this->app_id}:{$this->secret}";
 
-            $token_gateway = $this->gateway . "/token";
-            $payment_gateway = $this->gateway . "/payment";
+                $token_gateway = $this->gateway . "/token";
+                $payment_gateway = $this->gateway . "/payment";
 
-            if (!class_exists('CurlTool')) {
-                if (!require(plugin_dir_path(__FILE__) . '/src/CurlTool.php')) {
-                    throw new Exception(__('CurlTool module missed.', 'woocommerce'));
+                if (!class_exists('CurlTool')) {
+                    if (!require(plugin_dir_path(__FILE__) . '/src/CurlTool.php')) {
+                        throw new Exception(__('CurlTool module missed.', 'woocommerce'));
+                    }
                 }
-            }
 
-            $curl = CurlTool::getInstance();
-            $tokenJson = $curl->postToken($userAuth, $token_gateway);
+                $curl = CurlTool::getInstance();
+                $tokenJson = $curl->postToken($userAuth, $token_gateway);
 //            $this->handleResult($tokenJson);
-            $token = json_decode($tokenJson)->token;
+                $token = json_decode($tokenJson)->token;
 
-            $result = $curl->postAPI($token, $payment_gateway, json_encode($pchomepay_args));
-            $this->handleResult($result);
+                $result = $curl->postAPI($token, $payment_gateway, json_encode($pchomepay_args));
+                $this->handleResult($result);
 
-            $payment_url = "'" . json_decode($result)->payment_url . "'";
+                $payment_url = "'" . json_decode($result)->payment_url . "'";
 
-            echo '<p><span id="timer">3</span> 秒後會自動跳轉到 PCHomePay 付款頁面，或者按下方按鈕直接前往<br></p>
+                echo '<p><span id="timer">3</span> 秒後會自動跳轉到 PCHomePay 付款頁面，或者按下方按鈕直接前往<br></p>
                   <input type="submit" class="button-alt" id="submit_pchomepay" value="前往 PCHomePay 付款頁面" onclick="location.href=' . $payment_url . '" />' .
-                  "<script>
+                    "<script>
                       function countDown()
                       {
                           var x = document.getElementById(\"timer\");
@@ -203,7 +203,11 @@ function pchomepay_gateway_init()
                       }
                       setTimeout(\"countDown()\", 1000);
                   </script>";
-            exit();
+                exit();
+
+            } catch (Exception $e) {
+                echo $e->getMessage();
+            }
         }
 
         private function get_pchomepay_args($order)
@@ -291,11 +295,6 @@ function pchomepay_gateway_init()
             $obj = json_decode($result);
 
             $err = json_last_error();
-            var_dump($result);
-            var_dump($obj);
-            var_dump($err);
-            echo('114.44.115.208');
-            exit();
 
             if ($err) {
                 $errStr = "($err)" . $jsonErrMap[$err];
@@ -303,6 +302,10 @@ function pchomepay_gateway_init()
                     $errStr = " - unknow error, error code ({$err})";
                 }
                 throw new Exception("server result error($err) {$errStr}:$result");
+            }
+
+            if (isset($obj->error_type)) {
+                throw new Exception("交易失敗，錯誤代碼：" . $obj->code);
             }
 
             return $obj;
@@ -315,7 +318,8 @@ function pchomepay_gateway_init()
             // 更新訂單狀態為等待中 (等待第三方支付網站返回)
             $order->update_status('pending', __('Awaiting PCHomePay payment', 'woocommerce'));
             // 減少庫存
-            $order->reduce_order_stock();
+//            $order->reduce_order_stock();
+            wc_reduce_stock_levels($order_id);
             // 清空購物車
             $woocommerce->cart->empty_cart();
             // 返回感謝購物頁面跳轉
@@ -325,18 +329,25 @@ function pchomepay_gateway_init()
             );
         }
 
-    }
+        public function receive_response()
+        {
+            $result = $_REQUEST;
+            var_dump(123);
+            var_dump($result);
+            var_dump($_GET);
+            if ($result) {
+                
+                throw new Exception($result);
+            }
+            wp_die();
+            exit();
+        }
 
-    function receive_response()
-    {
-        $result = $_REQUEST;
-        var_dump($result);
-        exit();
     }
 
     function add_pchomepay_gateway_class($methods)
     {
-        $methods[] = 'WC_Pchomepay_Gateway';
+        $methods[] = 'WC_Gateway_Pchomepay';
         return $methods;
     }
 
