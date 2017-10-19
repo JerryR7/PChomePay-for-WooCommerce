@@ -141,7 +141,7 @@ function pchomepay_gateway_init()
                     'default' => 5
                 ),
                 'cover_transfee' => array(
-                    'title' => __('跨行轉帳手續費,值須為 Y 或 N。', 'woocommerce'),
+                    'title' => __('進行退款時的跨行轉帳手續費，<br>值須為 Y 或 N。', 'woocommerce'),
                     'type' => 'select',
                     'description' => __("Y : 由串接廠商自行吸收跨行轉帳手續費。<br>N : 由使用者自行負擔跨行轉帳手續費。", 'woocommerce'),
                     'options' => array(
