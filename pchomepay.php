@@ -87,10 +87,10 @@ function pchomepay_gateway_init()
                     'default' => __('透過 PChomePay 付款。<br>會連結到 PChomePay 付款頁面。', 'woocommerce'),
                 ),
                 'test_mode' => array(
-                    'title' => __('Test Mode', 'woocommerce'),
+                    'title' => __('測試模式', 'woocommerce'),
                     'label' => __('Enable', 'woocommerce'),
                     'type' => 'checkbox',
-                    'description' => __('Test order will add date as prefix.', 'woocommerce'),
+                    'description' => __('使用支付連 SandBox 測試環境', 'woocommerce'),
                     'default' => 'no'
                 ),
                 'app_id' => array(
@@ -104,44 +104,44 @@ function pchomepay_gateway_init()
                     'default' => 'rV_lOkRdWiFA3Ah_usq5z8FKlnMVlFO7lJ8q63ya'
                 ),
                 'payment_methods' => array(
-                    'title' => __('Payment Method', 'woocommerce'),
+                    'title' => __('付款方式', 'woocommerce'),
                     'type' => 'multiselect',
-                    'description' => __('Press CTRL and the right button on the mouse to select multi payments.', 'woocommerce'),
+                    'description' => __('按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式。', 'woocommerce'),
                     'options' => array(
-                        'CARD' => __('CARD'),
+                        'CARD' => __('信用卡'),
                         'ATM' => __('ATM'),
-                        'EACH' => __('EACH'),
-                        'ACCT' => __('ACCT')
+                        'EACH' => __('銀行支付'),
+                        'ACCT' => __('支付連餘額支付')
                     )
                 ),
                 'card_installment' => array(
-                    'title' => __('Card Installment', 'woocommerce'),
+                    'title' => __('信用卡分期', 'woocommerce'),
                     'type' => 'multiselect',
-                    'description' => __('Card Installment Setting<br>Press CTRL and the right button on the mouse to select multi payments.', 'woocommerce'),
+                    'description' => __('信用卡分期設定<br>按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式。', 'woocommerce'),
                     'options' => array(
-                        'CRD_0' => __('Credit', 'woocommerce'),
-                        'CRD_3' => __('Credit_3', 'woocommerce'),
-                        'CRD_6' => __('Credit_6', 'woocommerce'),
-                        'CRD_12' => __('Credit_12', 'woocommerce'),
+                        'CRD_0' => __('一次付清', 'woocommerce'),
+                        'CRD_3' => __('3 期', 'woocommerce'),
+                        'CRD_6' => __('6 期', 'woocommerce'),
+                        'CRD_12' => __('12 期', 'woocommerce'),
                     )
                 ),
                 'card_rate' => array(
-                    'title' => __('Card Installment', 'woocommerce'),
+                    'title' => __('信用卡分期利率', 'woocommerce'),
                     'type' => 'select',
-                    'description' => __('Card Rate Setting', 'woocommerce'),
+                    'description' => __('信用卡分期利率設定', 'woocommerce'),
                     'options' => array(
-                        '0' => __('Zero-percent Interest Rate', 'woocommerce'),
-                        '1' => __('General Interest Rate', 'woocommerce')
+                        '0' => __('0 利率', 'woocommerce'),
+                        '1' => __('一般信用卡分期利率', 'woocommerce')
                     )
                 ),
                 'atm_expiredate' => array(
-                    'title' => __('ATM Expire Date', 'woocommerce'),
+                    'title' => __('ATM 虛擬帳號繳費期限', 'woocommerce'),
                     'type' => 'text',
-                    'description' => __("Please enter ATM expire date (1~5 days), default is 5 days", 'woocommerce'),
+                    'description' => __("請輸入 ATM 虛擬帳號繳費期限 (1~5 天)，預設 5 天。", 'woocommerce'),
                     'default' => 5
                 ),
                 'cover_transfee' => array(
-                    'title' => __('進行退款時的跨行轉帳手續費，<br>值須為 Y 或 N。', 'woocommerce'),
+                    'title' => __('退款的跨行轉帳手續費，<br>值須為 Y 或 N。', 'woocommerce'),
                     'type' => 'select',
                     'description' => __("Y : 由串接廠商自行吸收跨行轉帳手續費。<br>N : 由使用者自行負擔跨行轉帳手續費。", 'woocommerce'),
                     'options' => array(
@@ -337,7 +337,6 @@ function pchomepay_gateway_init()
                 $refundID = get_post_meta($order_id, 'pchomepay_refundid', true);
 
                 $pchomepay_args = json_encode($this->get_pchomepay_refund_data($orderID, $amount, $refundID));
-                var_dump($pchomepay_args);
 
                 if (!class_exists('PChomePayClient')) {
                     if (!require(dirname(__FILE__) . 'PChomePayClient.php')) {
