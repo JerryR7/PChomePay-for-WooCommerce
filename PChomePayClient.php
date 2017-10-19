@@ -34,13 +34,23 @@ class PChomePayClient
     // 建立訂單
     public function postPayment($data)
     {
-        return $this->send_request($this->postPaymentURL, $data);
+        return $this->post_request($this->postPaymentURL, $data);
     }
 
     // 建立退款
     public function postRefund($data)
     {
-        return $this->send_request($this->postRefundURL, $data);
+        return $this->post_request($this->postRefundURL, $data);
+    }
+
+    // 查詢訂單
+    public function getPayment($orderID)
+    {
+        if (!is_string($orderID) || stristr($orderID, "/")) {
+            throw new Exception('Order does not exist!', 20002);
+        }
+
+        return $this->get_request(str_replace("{order_id}", $orderID, $this->getPaymentURL));
     }
 
     // 取Token
@@ -60,9 +70,9 @@ class PChomePayClient
         return $this->handleResult($body);
     }
 
-    protected function send_request($method, $postdata)
+    protected function post_request($method, $postdata)
     {
-        $token = json_decode($this->getToken());
+        $token = $this->getToken();
 
         $r = wp_remote_post($method, array(
             'headers' => array(
@@ -70,6 +80,22 @@ class PChomePayClient
                 'pcpay-token' => $token->token,
             ),
             'body' => $postdata,
+        ));
+
+        $body = wp_remote_retrieve_body($r);
+
+        return $this->handleResult($body);
+    }
+
+    protected function get_request($method)
+    {
+        $token = $this->getToken();
+
+        $r = wp_remote_get($method, array(
+            'headers' => array(
+                'Content-type' => 'application/json',
+                'pcpay-token' => $token->token,
+            )
         ));
 
         $body = wp_remote_retrieve_body($r);
@@ -107,6 +133,6 @@ class PChomePayClient
             throw new Exception("交易失敗，請聯絡網站管理員。錯誤代碼：" . $obj->code);
         }
 
-        return $result;
+        return $obj;
     }
 }

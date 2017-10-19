@@ -32,6 +32,7 @@ function pchomepay_gateway_init()
             $this->has_fields = false;
             $this->method_title = __('PChomePay', 'woocommerce');
             $this->method_description = '透過 PChomePay 付款。<br>會連結到 PChomePay 付款頁面。';
+            $this->supports = array('products', 'refunds');
 
             $this->init_form_fields();
             $this->init_settings();
@@ -56,7 +57,7 @@ function pchomepay_gateway_init()
             if (empty($this->app_id) || empty($this->secret)) {
                 $this->enabled = false;
             } else {
-                $this->client = new PchomePayClient($this->app_id, $this->secret, $this->test_mode);
+                $this->client = new PChomePayClient($this->app_id, $this->secret, $this->test_mode);
             }
 
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
@@ -252,11 +253,12 @@ function pchomepay_gateway_init()
                 wc_reduce_stock_levels($order_id);
                 // 清空購物車
                 $woocommerce->cart->empty_cart();
+                add_post_meta($order_id, 'pchomepay_orderid', $result->order_id);
                 // 返回感謝購物頁面跳轉
                 return array(
                     'result' => 'success',
 //                'redirect' => $order->get_checkout_payment_url(true)
-                    'redirect' => json_decode($result)->payment_url
+                    'redirect' => $result->payment_url
                 );
 
             } catch (Exception $e) {
@@ -276,7 +278,7 @@ function pchomepay_gateway_init()
 
             $order_data = json_decode(str_replace('\"', '"', $notify_message));
 
-            $order = new WC_Order($order_data->order_id);
+            $order = new WC_Order(substr($order_data->order_id, -3));
 
             if ($notify_type == 'order_expired') {
                 $order->update_status(
@@ -290,44 +292,52 @@ function pchomepay_gateway_init()
                 $order->payment_complete();
             }
 
+            echo 'success';
+
             wp_die();
             exit;
         }
 
-        private function get_pchomepay_refund_data($order)
+        private function get_pchomepay_refund_data($orderID, $amount, $refundID = null)
         {
-            global $woocommerce;
+            try {
+                global $woocommerce;
 
-            $order_id = date('Ymd') . $order->get_order_number();
-            $refund_id = 'RF' . $order_id;
-            $trade_amount = ceil($order->get_total());
-            $cover_transfee = $this->cover_transfee;
-            $return_url = $this->get_return_url($order);
+                $order = $this->client->getPayment($orderID);
 
-            $pchomepay_args = [
-                'order_id' => $order_id,
-                'refund_id' => $refund_id,
-                'trade_amount' => $trade_amount,
-                'cover_transfee' => $cover_transfee,
-                'return_url' => $return_url
-            ];
+                $order_id = $order->order_id;
 
-            $pchomepay_args = apply_filters('woocommerce_pchomepay_args', $pchomepay_args);
+                if ($refundID) {
+                    $number = (int)substr($refundID, -1) + 1;
+                    $refund_id = 'RF' . $order_id . '00' . $number;
+                } else {
+                    $refund_id = 'RF' . $order_id . '000';
+                }
+                $trade_amount = (int)$amount;
+                (in_array($order->pay_type, ['ATM', 'EACH'])) ? $cover_transfee = $this->cover_transfee : $cover_transfee = null;
+                $pchomepay_args = [
+                    'order_id' => $order_id,
+                    'refund_id' => $refund_id,
+                    'trade_amount' => $trade_amount,
+                    'cover_transfee' => $cover_transfee,
+                ];
 
-            return $pchomepay_args;
+                $pchomepay_args = apply_filters('woocommerce_pchomepay_args', $pchomepay_args);
+
+                return $pchomepay_args;
+            } catch (Exception $e) {
+                echo $e->getMessage();
+            }
         }
 
         public function process_refund($order_id, $amount = null, $reason = '')
         {
             try {
-                global $woocommerce;
+                $orderID = get_post_meta($order_id, 'pchomepay_orderid', true);
+                $refundID = get_post_meta($order_id, 'pchomepay_refundid', true);
 
-                $order = new WC_Order($order_id);
-
-                // 更新訂單狀態為等待中 (等待第三方支付網站返回)
-                $order->update_status('pending', __('Awaiting PChomePay payment', 'woocommerce'));
-
-                $pchomepay_args = json_encode($this->get_pchomepay_refund_data($order));
+                $pchomepay_args = json_encode($this->get_pchomepay_refund_data($orderID, $amount, $refundID));
+                var_dump($pchomepay_args);
 
                 if (!class_exists('PChomePayClient')) {
                     if (!require(dirname(__FILE__) . 'PChomePayClient.php')) {
@@ -335,15 +345,21 @@ function pchomepay_gateway_init()
                     }
                 }
 
+                // 退款
                 $response_data = $this->client->postRefund($pchomepay_args);
 
-                if ($response_data->returnCode !== '0000') {
-                    return false;
+                if (!$response_data) return false;
+
+                // 更新 meta
+                ($refundID) ? update_post_meta($order_id, 'pchomepay_refundid', $response_data->refund_id) : add_post_meta($order_id, 'pchomepay_refundid', $response_data->refund_id);
+
+                if (isset($response_data->redirect_url)) {
+                    (get_post_meta($order_id, 'pchomepay_refund_url', true)) ? update_post_meta($order_id, 'pchomepay_refund_url', $response_data->redirect_url) : add_post_meta($order_id, 'pchomepay_refund_url', $response_data->redirect_url);
                 }
 
                 return true;
             } catch (Exception $e) {
-                echo $e->getMessage();
+                throw $e;
             }
         }
     }
