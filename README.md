@@ -11,7 +11,7 @@ Currently supports the following features:
 
 This plugin supports refunds directly from the WooCommerce Order backend.
 
-When you process a refund within its pay type is ATM, remember give the refund URL to your purchaser.
+When you process a refund within its pay type is ATM, remember to give the refund URL to your purchaser.
 the URL will lead your purchaser fill in a refund form to complete the refund.
 
 
