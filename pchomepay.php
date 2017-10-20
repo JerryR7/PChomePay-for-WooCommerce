@@ -293,9 +293,7 @@ function pchomepay_gateway_init()
             }
 
             echo 'success';
-
-            wp_die();
-            exit;
+            exit();
         }
 
         private function get_pchomepay_refund_data($orderID, $amount, $refundID = null)
@@ -308,8 +306,8 @@ function pchomepay_gateway_init()
                 $order_id = $order->order_id;
 
                 if ($refundID) {
-                    $number = (int)substr($refundID, -1) + 1;
-                    $refund_id = 'RF' . $order_id . '00' . $number;
+                    $number = (int)trim(substr($refundID, -3), 0) + 1;
+                    $refund_id = 'RF' . $order_id . str_pad($number, 3, 0, STR_PAD_LEFT);
                 } else {
                     $refund_id = 'RF' . $order_id . '000';
                 }
