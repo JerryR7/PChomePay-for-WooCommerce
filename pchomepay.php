@@ -278,7 +278,7 @@ function pchomepay_gateway_init()
 
             $order_data = json_decode(str_replace('\"', '"', $notify_message));
 
-            $order = new WC_Order(substr($order_data->order_id, -3));
+            $order = new WC_Order(substr($order_data->order_id, 8));
 
             if ($notify_type == 'order_expired') {
                 $order->update_status(
