@@ -96,12 +96,12 @@ function pchomepay_gateway_init()
                 'app_id' => array(
                     'title' => __('APP ID', 'woocommerce'),
                     'type' => 'text',
-                    'default' => 'ED25E956580083F635C2F2EC6C16'
+                    'default' => ''
                 ),
                 'secret' => array(
                     'title' => __('SECRET', 'woocommerce'),
                     'type' => 'text',
-                    'default' => 'rV_lOkRdWiFA3Ah_usq5z8FKlnMVlFO7lJ8q63ya'
+                    'default' => ''
                 ),
                 'payment_methods' => array(
                     'title' => __('付款方式', 'woocommerce'),
