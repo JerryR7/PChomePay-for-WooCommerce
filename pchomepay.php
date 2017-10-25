@@ -4,11 +4,11 @@
  * @version 0.0.1
  *
  * Plugin Name: PChomePay Gateway for WooCommerce
- * Plugin URI: https://github.com/JerryR7/PCHomePay-for-WooCommerce
- * Description: 讓 WooCommerce 可以使用 PChomePay 進行結帳！水啦！！
+ * Plugin URI: https://www.pchomepay.com.tw
+ * Description: 讓 WooCommerce 可以使用 PChomePay支付連 進行結帳！水啦！！
  * Version: 0.0.1
- * Author: Jerry.
- * Author URI: https://github.com/JerryR7
+ * Author: PChomePay支付連
+ * Author URI: https://www.pchomepay.com.tw
  */
 
 add_action('plugins_loaded', 'pchomepay_gateway_init', 0);
@@ -31,7 +31,7 @@ function pchomepay_gateway_init()
             $this->icon = apply_filters('woocommerce_pchomepay_icon', plugins_url('images/pchomepay_logo.png', __FILE__));;
             $this->has_fields = false;
             $this->method_title = __('PChomePay', 'woocommerce');
-            $this->method_description = '透過 PChomePay 付款。<br>會連結到 PChomePay 付款頁面。';
+            $this->method_description = '透過 PChomePay支付連 付款。<br>會連結到 PChomePay支付連 付款頁面。';
             $this->supports = array('products', 'refunds');
 
             $this->init_form_fields();
@@ -84,7 +84,7 @@ function pchomepay_gateway_init()
                     'title' => __('Description', 'woocommerce'),
                     'type' => 'textarea',
                     'description' => __('This controls the description which the user sees during checkout.', 'woocommerce'),
-                    'default' => __('透過 PChomePay 付款。<br>會連結到 PChomePay 付款頁面。', 'woocommerce'),
+                    'default' => __('透過 PChomePay支付連 付款。<br>會連結到 PChomePay支付連 付款頁面。', 'woocommerce'),
                 ),
                 'test_mode' => array(
                     'title' => __('測試模式', 'woocommerce'),
