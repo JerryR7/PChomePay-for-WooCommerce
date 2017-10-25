@@ -221,8 +221,9 @@ function pchomepay_gateway_init()
                 'items' => $items,
                 'buyer_email' => $buyer_email,
                 'atm_info' => $atm_info,
-                'card_info' => $card_info
             ];
+
+            if ($card_info) $pchomepay_args['card_info'] = $card_info;
 
             $pchomepay_args = apply_filters('woocommerce_pchomepay_args', $pchomepay_args);
 
@@ -262,7 +263,7 @@ function pchomepay_gateway_init()
                 );
 
             } catch (Exception $e) {
-                wc_add_notice( __( $e->getMessage(), 'woocommerce' ), 'error' );
+                wc_add_notice(__($e->getMessage(), 'woocommerce'), 'error');
             }
         }
 
