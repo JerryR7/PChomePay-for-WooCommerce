@@ -262,7 +262,7 @@ function pchomepay_gateway_init()
                 );
 
             } catch (Exception $e) {
-                echo $e->getMessage();
+                wc_add_notice( __( $e->getMessage(), 'woocommerce' ), 'error' );
             }
         }
 
@@ -324,7 +324,7 @@ function pchomepay_gateway_init()
 
                 return $pchomepay_args;
             } catch (Exception $e) {
-                echo $e->getMessage();
+                throw $e;
             }
         }
 
