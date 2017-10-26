@@ -15,7 +15,7 @@ add_action('plugins_loaded', 'pchomepay_gateway_init', 0);
 
 function pchomepay_gateway_init()
 {
-    # Make sure WooCommerce is setted.
+    // Make sure WooCommerce is setted.
     if (!class_exists('WC_Payment_Gateway')) {
         return;
     }
@@ -27,6 +27,11 @@ function pchomepay_gateway_init()
 
         public function __construct()
         {
+            // Validate ATM ExpireDate
+            if (isset($_POST['woocommerce_pchomepay_atm_expiredate']) && (!preg_match('/^\d*$/', $_POST['woocommerce_pchomepay_atm_expiredate']) || $_POST['woocommerce_pchomepay_atm_expiredate'] < 1 || $_POST['woocommerce_pchomepay_atm_expiredate'] > 5)) {
+                $_POST['woocommerce_pchomepay_atm_expiredate'] = 5;
+            }
+
             $this->id = 'pchomepay';
             $this->icon = apply_filters('woocommerce_pchomepay_icon', plugins_url('images/pchomepay_logo.png', __FILE__));;
             $this->has_fields = false;
@@ -117,7 +122,7 @@ function pchomepay_gateway_init()
                 'card_installment' => array(
                     'title' => __('信用卡分期', 'woocommerce'),
                     'type' => 'multiselect',
-                    'description' => __('信用卡分期設定<br>按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式。', 'woocommerce'),
+                    'description' => __('按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式。<br><br>信用卡分期不適用於金額低於30元之訂單<br>低於30元之訂單於支付連信用卡付款頁面僅會顯示一次付清選項', 'woocommerce'),
                     'options' => array(
                         'CRD_0' => __('一次付清', 'woocommerce'),
                         'CRD_3' => __('3 期', 'woocommerce'),
@@ -171,6 +176,11 @@ function pchomepay_gateway_init()
             $return_url = $this->get_return_url($order);
             $notify_url = $this->notify_url;
             $buyer_email = $order->get_billing_email();
+
+            if (isset($this->atm_expiredate) && (!preg_match('/^\d*$/', $this->atm_expiredate) || $this->atm_expiredate < 1 || $this->atm_expiredate > 5)) {
+                $this->atm_expiredate = 5;
+            }
+
             $atm_info = (object)['expire_days' => (int)$this->atm_expiredate];
 
             $card_info = [];
@@ -368,5 +378,46 @@ function pchomepay_gateway_init()
         return $methods;
     }
 
+    function add_pchomepay_settings_link($links)
+    {
+        $mylinks = array(
+            '<a href="' . admin_url('admin.php?page=wc-settings&tab=checkout&section=pchomepay') . '">' . __('設定') . '</a>',
+        );
+        return array_merge($links, $mylinks);
+    }
+
     add_filter('woocommerce_payment_gateways', 'add_pchomepay_gateway_class');
+    add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'add_pchomepay_settings_link');
+
+
+}
+
+add_action( 'init', 'pchomepay_plugin_updater_init' );
+
+function pchomepay_plugin_updater_init() {
+
+    include_once 'updater.php';
+
+    define( 'WP_GITHUB_FORCE_UPDATE', true );
+
+    if ( is_admin() ) { // note the use of is_admin() to double check that this is happening in the admin
+
+        $config = array(
+            'slug' => plugin_basename( __FILE__ ),
+            'proper_folder_name' => 'PCHomePay-for-WooCommerce-master',
+            'api_url' => 'https://api.github.com/repos/JerryR7/PChomePay-for-WooCommerce',
+            'raw_url' => 'https://raw.github.com/JerryR7/PChomePay-for-WooCommerce/master',
+            'github_url' => 'https://github.com/JerryR7/PChomePay-for-WooCommerce',
+            'zip_url' => 'https://github.com/JerryR7/PChomePay-for-WooCommerce/archive/master.zip',
+            'sslverify' => true,
+            'requires' => '3.0',
+            'tested' => '4.8',
+            'readme' => 'README.md',
+            'access_token' => '',
+        );
+
+        new WP_GitHub_Updater( $config );
+
+    }
+
 }
