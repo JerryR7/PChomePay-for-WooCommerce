@@ -1,12 +1,11 @@
 <?php
 /**
  * @copyright  Copyright © 2017 PChomePay Electronic Payment Co., Ltd.(https://www.pchomepay.com.tw)
- * @version 0.0.1
  *
  * Plugin Name: PChomePay Gateway for WooCommerce
  * Plugin URI: https://www.pchomepay.com.tw
  * Description: 讓 WooCommerce 可以使用 PChomePay支付連 進行結帳！水啦！！
- * Version: 0.0.1
+ * Version: 0.0.3
  * Author: PChomePay支付連
  * Author URI: https://www.pchomepay.com.tw
  */
