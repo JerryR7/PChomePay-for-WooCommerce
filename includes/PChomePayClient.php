@@ -1,8 +1,6 @@
 <?php
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 /**
  * Created by PhpStorm.
@@ -15,12 +13,12 @@ class PChomePayClient
     const BASE_URL = "https://api.pchomepay.com.tw/v1";
     const SB_BASE_URL = "https://sandbox-api.pchomepay.com.tw/v1";
 
-    public function __construct($appID, $secret, $sandBox = false)
+    public function __construct($appID, $secret, $sandboxSecret, $sandBox = false)
     {
         $baseURL = $sandBox ? PChomePayClient::SB_BASE_URL : PChomePayClient::BASE_URL;
 
         $this->appID = $appID;
-        $this->secret = $secret;
+        $this->secret = $sandBox ? $sandboxSecret : $secret;
 
         $this->tokenURL = $baseURL . "/token";
         $this->postPaymentURL = $baseURL . "/payment";
@@ -28,7 +26,7 @@ class PChomePayClient
         $this->getRefundURL = $baseURL . "/refund/{refund_id}";
         $this->postRefundURL = $baseURL . "/refund";
 
-        $this->userAuth = "{$appID}:{$secret}";
+        $this->userAuth = "{$this->appID}:{$this->secret}";
     }
 
     // 建立訂單

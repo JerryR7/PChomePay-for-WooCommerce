@@ -10,6 +10,8 @@
  * Author URI: https://www.pchomepay.com.tw
  */
 
+if (!defined('ABSPATH')) exit;
+
 add_action('plugins_loaded', 'pchomepay_gateway_init', 0);
 
 function pchomepay_gateway_init()
@@ -19,7 +21,7 @@ function pchomepay_gateway_init()
         return;
     }
 
-    require_once(dirname(__FILE__) . '/PChomePayClient.php');
+    require_once(dirname(__FILE__) . '/includes/PChomePayClient.php');
 
     class WC_Gateway_PChomepay extends WC_Payment_Gateway
     {
@@ -34,7 +36,7 @@ function pchomepay_gateway_init()
             $this->id = 'pchomepay';
             $this->icon = apply_filters('woocommerce_pchomepay_icon', plugins_url('images/pchomepay_logo.png', __FILE__));;
             $this->has_fields = false;
-            $this->method_title = __('PChomePay', 'woocommerce');
+            $this->method_title = __('PChomePay支付連', 'woocommerce');
             $this->method_description = '透過 PChomePay支付連 付款。<br>會連結到 PChomePay支付連 付款頁面。';
             $this->supports = array('products', 'refunds');
 
@@ -47,6 +49,7 @@ function pchomepay_gateway_init()
             $this->description = $this->get_option('description');
             $this->app_id = trim($this->get_option('app_id'));
             $this->secret = trim($this->get_option('secret'));
+            $this->sandbox_secret = trim($this->get_option('sandbox_secret'));
             $this->atm_expiredate = $this->get_option('atm_expiredate');
             $this->test_mode = $this->get_option('test_mode');
             $this->notify_url = WC()->api_request_url(get_class($this));
@@ -61,7 +64,7 @@ function pchomepay_gateway_init()
             if (empty($this->app_id) || empty($this->secret)) {
                 $this->enabled = false;
             } else {
-                $this->client = new PChomePayClient($this->app_id, $this->secret, $this->test_mode);
+                $this->client = new PChomePayClient($this->app_id, $this->secret, $this->sandbox_secret, $this->test_mode);
             }
 
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
@@ -105,6 +108,13 @@ function pchomepay_gateway_init()
                 'secret' => array(
                     'title' => __('SECRET', 'woocommerce'),
                     'type' => 'text',
+                    'description' => __("供正式正式環境使用之Secret。", 'woocommerce'),
+                    'default' => ''
+                ),
+                'sandbox_secret' => array(
+                    'title' => __('SECRET for test mode', 'woocommerce'),
+                    'type' => 'text',
+                    'description' => __("供測試環境使用之Secret。", 'woocommerce'),
                     'default' => ''
                 ),
                 'payment_methods' => array(
@@ -252,7 +262,7 @@ function pchomepay_gateway_init()
                 $pchomepay_args = json_encode($this->get_pchomepay_payment_data($order));
 
                 if (!class_exists('PChomePayClient')) {
-                    if (!require(dirname(__FILE__) . 'PChomePayClient.php')) {
+                    if (!require(dirname(__FILE__) . '/includes/PChomePayClient.php')) {
                         throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
                     }
                 }
@@ -347,7 +357,7 @@ function pchomepay_gateway_init()
                 $pchomepay_args = json_encode($this->get_pchomepay_refund_data($orderID, $amount, $refundID));
 
                 if (!class_exists('PChomePayClient')) {
-                    if (!require(dirname(__FILE__) . 'PChomePayClient.php')) {
+                    if (!require(dirname(__FILE__) . '/includes/PChomePayClient.php')) {
                         throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
                     }
                 }
@@ -396,7 +406,7 @@ add_action('init', 'pchomepay_plugin_updater_init');
 function pchomepay_plugin_updater_init()
 {
 
-    include_once 'updater.php';
+    include_once 'includes/updater.php';
 
     define('WP_GITHUB_FORCE_UPDATE', true);
 
