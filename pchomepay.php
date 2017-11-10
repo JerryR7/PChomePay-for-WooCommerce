@@ -5,7 +5,7 @@
  * Plugin Name: PChomePay Gateway for WooCommerce
  * Plugin URI: https://www.pchomepay.com.tw
  * Description: 讓 WooCommerce 可以使用 PChomePay支付連 進行結帳！水啦！！
- * Version: 0.0.6
+ * Version: 0.0.7
  * Author: PChomePay支付連
  * Author URI: https://www.pchomepay.com.tw
  */
@@ -328,7 +328,7 @@ function pchomepay_gateway_init()
 
                 $order_id = $order->order_id;
 
-                $wcOrder = new WC_Order($order_id);
+                $wcOrder = new WC_Order(substr($order_id, 8));
                 $return_url = $this->get_return_url($wcOrder);
 
                 if ($refundID) {
