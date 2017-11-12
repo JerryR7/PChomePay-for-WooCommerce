@@ -301,7 +301,24 @@ function pchomepay_gateway_init()
             $order = new WC_Order(substr($order_data->order_id, 8));
 
             # 紀錄訂單付款方式
-            $order->add_order_note($order_data->pay_type, true);
+            switch ($order_data->pay_type) {
+                case 'ATM':
+                    $pay_type_note = 'ATM 付款';
+                    break;
+                case 'CARD':
+                    $pay_type_note = '信用卡 付款';
+                    break;
+                case 'ACCT':
+                    $pay_type_note = '支付連餘額 付款';
+                    break;
+                case 'EACH':
+                    $pay_type_note = '銀行支付 付款';
+                    break;
+                default:
+                    $pay_type_note = $order_data->pay_type . '付款';
+            }
+
+            $order->add_order_note($pay_type_note, true);
 
             if ($notify_type == 'order_expired') {
                 $order->update_status(
