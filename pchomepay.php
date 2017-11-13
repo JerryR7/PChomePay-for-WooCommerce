@@ -23,8 +23,13 @@ function pchomepay_gateway_init()
 
     require_once(dirname(__FILE__) . '/includes/PChomePayClient.php');
 
-    class WC_Gateway_PChomepay extends WC_Payment_Gateway
+    class WC_Gateway_PChomePay extends WC_Payment_Gateway
     {
+        /** @var bool Whether or not logging is enabled */
+        public static $log_enabled = false;
+
+        /** @var WC_Logger Logger instance */
+        public static $log = false;
 
         public function __construct()
         {
@@ -51,15 +56,16 @@ function pchomepay_gateway_init()
             $this->secret = trim($this->get_option('secret'));
             $this->sandbox_secret = trim($this->get_option('sandbox_secret'));
             $this->atm_expiredate = $this->get_option('atm_expiredate');
-            $this->test_mode = $this->get_option('test_mode');
+            // Test Mode
+            $this->test_mode = ($this->get_option('test_mode') === 'yes') ? true : false;
+            $this->debug = ($this->get_option('debug') === 'yes') ? true : false;
             $this->notify_url = WC()->api_request_url(get_class($this));
             $this->payment_methods = $this->get_option('payment_methods');
             $this->card_installment = $this->get_option('card_installment');
             $this->card_rate = $this->get_option('card_rate');
             $this->cover_transfee = $this->get_option('cover_transfee');
 
-            // Test Mode
-            $this->test_mode = ($this->get_option('test_mode') === 'yes') ? true : false;
+            self::$log_enabled    = $this->debug;
 
             if (empty($this->app_id) || empty($this->secret)) {
                 $this->enabled = false;
@@ -73,97 +79,7 @@ function pchomepay_gateway_init()
 
         public function init_form_fields()
         {
-            $this->form_fields = array(
-                'enabled' => array(
-                    'title' => __('Enable/Disable', 'woocommerce'),
-                    'type' => 'checkbox',
-                    'label' => __('Enable', 'woocommerce'),
-                    'default' => 'no'
-                ),
-                'title' => array(
-                    'title' => __('Title', 'woocommerce'),
-                    'type' => 'text',
-                    'description' => __('This controls the title which the user sees during checkout.', 'woocommerce'),
-                    'default' => __('PChomePay', 'woocommerce'),
-                    'desc_tip' => true,
-                ),
-                'description' => array(
-                    'title' => __('Description', 'woocommerce'),
-                    'type' => 'textarea',
-                    'description' => __('This controls the description which the user sees during checkout.', 'woocommerce'),
-                    'default' => __('透過 PChomePay支付連 付款。<br>會連結到 PChomePay支付連 付款頁面。', 'woocommerce'),
-                ),
-                'test_mode' => array(
-                    'title' => __('測試模式', 'woocommerce'),
-                    'label' => __('Enable', 'woocommerce'),
-                    'type' => 'checkbox',
-                    'description' => __('使用支付連 SandBox 測試環境', 'woocommerce'),
-                    'default' => 'no'
-                ),
-                'app_id' => array(
-                    'title' => __('APP ID', 'woocommerce'),
-                    'type' => 'text',
-                    'default' => ''
-                ),
-                'secret' => array(
-                    'title' => __('SECRET', 'woocommerce'),
-                    'type' => 'text',
-                    'description' => __("供正式正式環境使用之Secret。", 'woocommerce'),
-                    'default' => ''
-                ),
-                'sandbox_secret' => array(
-                    'title' => __('SECRET for test mode', 'woocommerce'),
-                    'type' => 'text',
-                    'description' => __("供測試環境使用之Secret。", 'woocommerce'),
-                    'default' => ''
-                ),
-                'payment_methods' => array(
-                    'title' => __('付款方式', 'woocommerce'),
-                    'type' => 'multiselect',
-                    'description' => __('按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式。', 'woocommerce'),
-                    'options' => array(
-                        'CARD' => __('信用卡'),
-                        'ATM' => __('ATM'),
-                        'EACH' => __('銀行支付'),
-                        'ACCT' => __('支付連餘額支付')
-                    )
-                ),
-                'card_installment' => array(
-                    'title' => __('信用卡分期', 'woocommerce'),
-                    'type' => 'multiselect',
-                    'description' => __('按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式。<br><br>信用卡分期不適用於金額低於30元之訂單<br>低於30元之訂單於支付連信用卡付款頁面僅會顯示一次付清選項', 'woocommerce'),
-                    'options' => array(
-                        'CRD_0' => __('一次付清', 'woocommerce'),
-                        'CRD_3' => __('3 期', 'woocommerce'),
-                        'CRD_6' => __('6 期', 'woocommerce'),
-                        'CRD_12' => __('12 期', 'woocommerce'),
-                    )
-                ),
-                'card_rate' => array(
-                    'title' => __('信用卡分期利率', 'woocommerce'),
-                    'type' => 'select',
-                    'description' => __('信用卡分期利率設定', 'woocommerce'),
-                    'options' => array(
-                        '0' => __('0 利率', 'woocommerce'),
-                        '1' => __('一般信用卡分期利率', 'woocommerce')
-                    )
-                ),
-                'atm_expiredate' => array(
-                    'title' => __('ATM 虛擬帳號繳費期限', 'woocommerce'),
-                    'type' => 'text',
-                    'description' => __("請輸入 ATM 虛擬帳號繳費期限 (1~5 天)，預設 5 天。", 'woocommerce'),
-                    'default' => 5
-                ),
-                'cover_transfee' => array(
-                    'title' => __('退款的跨行轉帳手續費，<br>值須為 Y 或 N。', 'woocommerce'),
-                    'type' => 'select',
-                    'description' => __("Y : 由串接廠商自行吸收跨行轉帳手續費。<br>N : 由使用者自行負擔跨行轉帳手續費。", 'woocommerce'),
-                    'options' => array(
-                        'Y' => __('Y', 'woocommerce'),
-                        'N' => __('N', 'woocommerce')
-                    )
-                )
-            );
+            $this->form_fields = include('includes/settings.php');
         }
 
         public function admin_options()
@@ -318,8 +234,6 @@ function pchomepay_gateway_init()
                     $pay_type_note = $order_data->pay_type . '付款';
             }
 
-            $order->add_order_note($pay_type_note, true);
-
             if ($notify_type == 'order_expired') {
                 $order->update_status(
                     'failed',
@@ -329,6 +243,7 @@ function pchomepay_gateway_init()
                     )
                 );
             } elseif ($notify_type == 'order_confirm') {
+                $order->add_order_note($pay_type_note, true);
                 $order->payment_complete();
             }
 
@@ -374,6 +289,8 @@ function pchomepay_gateway_init()
 
         public function process_refund($order_id, $amount = null, $reason = '')
         {
+            self::log($order_id);
+
             try {
                 $orderID = get_post_meta($order_id, 'pchomepay_orderid', true);
                 $refundID = get_post_meta($order_id, 'pchomepay_refundid', true);
@@ -403,11 +320,28 @@ function pchomepay_gateway_init()
                 throw $e;
             }
         }
+
+        /**
+         * Logging method.
+         *
+         * @param string $message Log message.
+         * @param string $level Optional. Default 'info'.
+         *     emergency|alert|critical|error|warning|notice|info|debug
+         */
+        public static function log($message, $level = 'info')
+        {
+            if (self::$log_enabled) {
+                if (empty(self::$log)) {
+                    self::$log = wc_get_logger();
+                }
+                self::$log->log($level, $message, array('source' => 'pchomepay'));
+            }
+        }
     }
 
     function add_pchomepay_gateway_class($methods)
     {
-        $methods[] = 'WC_Gateway_PChomepay';
+        $methods[] = 'WC_Gateway_PChomePay';
         return $methods;
     }
 

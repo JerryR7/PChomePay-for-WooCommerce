@@ -13,10 +13,11 @@ class PChomePayClient
     const BASE_URL = "https://api.pchomepay.com.tw/v1";
     const SB_BASE_URL = "https://sandbox-api.pchomepay.com.tw/v1";
 
-    public function __construct($appID, $secret, $sandboxSecret, $sandBox = false)
+    public function __construct($appID, $secret, $sandboxSecret, $sandBox = false, $debug = false)
     {
         $baseURL = $sandBox ? PChomePayClient::SB_BASE_URL : PChomePayClient::BASE_URL;
 
+        $this->debug = $debug;
         $this->appID = $appID;
         $this->secret = $sandBox ? $sandboxSecret : $secret;
 
@@ -27,6 +28,12 @@ class PChomePayClient
         $this->postRefundURL = $baseURL . "/refund";
 
         $this->userAuth = "{$this->appID}:{$this->secret}";
+    }
+
+    // 紀錄log
+    private function log($message)
+    {
+        if ($this->debug) WC_Gateway_PCHomePay::log($message);
     }
 
     // 建立訂單
@@ -124,10 +131,12 @@ class PChomePayClient
             if (empty($errStr)) {
                 $errStr = " - unknow error, error code ({$err})";
             }
+            $this->log("server result error($err) {$errStr}:$result");
             throw new Exception("server result error($err) {$errStr}:$result");
         }
 
         if (isset($obj->error_type)) {
+            $this->log("交易失敗，請聯絡網站管理員。錯誤代碼：" . $obj->code);
             throw new Exception("交易失敗，請聯絡網站管理員。錯誤代碼：" . $obj->code);
         }
 
