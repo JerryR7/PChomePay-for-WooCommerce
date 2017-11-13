@@ -65,12 +65,12 @@ function pchomepay_gateway_init()
             $this->card_rate = $this->get_option('card_rate');
             $this->cover_transfee = $this->get_option('cover_transfee');
 
-            self::$log_enabled    = $this->debug;
+            self::$log_enabled = $this->debug;
 
             if (empty($this->app_id) || empty($this->secret)) {
                 $this->enabled = false;
             } else {
-                $this->client = new PChomePayClient($this->app_id, $this->secret, $this->sandbox_secret, $this->test_mode);
+                $this->client = new PChomePayClient($this->app_id, $this->secret, $this->sandbox_secret, $this->test_mode, self::$log_enabled);
             }
 
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
