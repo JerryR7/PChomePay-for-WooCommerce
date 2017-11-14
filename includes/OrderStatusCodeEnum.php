@@ -64,7 +64,7 @@ class OrderStatusCodeEnum
     /** 銀行支付 等待OTP驗證 */
     const EACH_ORDER_OTP_WAIT = "WO";
 
-    public function getErrMsg($code)
+    public static function getErrMsg($code)
     {
         $msg = [
             static::ORDER_EXPIRED => '訂單過期',

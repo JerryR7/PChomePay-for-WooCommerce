@@ -9,7 +9,8 @@ if (!defined('ABSPATH')) exit;
  * Time: 上午10:36
  */
 
-include_once ('ApiException.php');
+include_once('ApiException.php');
+include_once('OrderStatusCodeEnum.php');
 
 class PChomePayClient
 {
@@ -139,9 +140,12 @@ class PChomePayClient
         }
 
         if (isset($obj->error_type)) {
-            $errorMsg = ApiException::getErrMsg($obj->code);
-            $this->log("\n錯誤類型：" . $obj->error_type . "\n錯誤代碼：" . $obj->code . "\n錯誤訊息：" . $errorMsg);
+            $this->log("\n錯誤類型：" . $obj->error_type . "\n錯誤代碼：" . $obj->code . "\n錯誤訊息：" . ApiException::getErrMsg($obj->code));
             throw new Exception("交易失敗，請聯絡網站管理員。錯誤代碼：" . $obj->code);
+        }
+
+        if (isset($obj->status_code)) {
+            $this->log("訂單編號：" . $obj->order_id . " 已失敗。\n原因：" . OrderStatusCodeEnum::getErrMsg($obj->status_code));
         }
 
         return $obj;
