@@ -8,6 +8,9 @@ if (!defined('ABSPATH')) exit;
  * Date: 17/10/18
  * Time: 上午10:36
  */
+
+include_once ('ApiException.php');
+
 class PChomePayClient
 {
     const BASE_URL = "https://api.pchomepay.com.tw/v1";
@@ -136,7 +139,8 @@ class PChomePayClient
         }
 
         if (isset($obj->error_type)) {
-            $this->log("交易失敗，請聯絡網站管理員。錯誤代碼：" . $obj->code);
+            $errorMsg = ApiException::getErrMsg($obj->code);
+            $this->log("\n錯誤類型：" . $obj->error_type . "\n錯誤代碼：" . $obj->code . "\n錯誤訊息：" . $errorMsg);
             throw new Exception("交易失敗，請聯絡網站管理員。錯誤代碼：" . $obj->code);
         }
 

@@ -6,9 +6,8 @@
  * Time: 上午10:05
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
+
 /**
  * Settings for PayPal Gateway.
  */
@@ -49,7 +48,7 @@ return array(
     'secret' => array(
         'title' => __('SECRET', 'woocommerce'),
         'type' => 'text',
-        'description' => __("供正式正式環境使用之Secret。", 'woocommerce'),
+        'description' => __("供正式環境使用之Secret。", 'woocommerce'),
         'default' => ''
     ),
     'sandbox_secret' => array(

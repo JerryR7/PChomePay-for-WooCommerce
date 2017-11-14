@@ -6,6 +6,8 @@
  * Time: 下午4:15
  */
 
+if (!defined('ABSPATH')) exit;
+
 class OrderStatusCodeEnum
 {
     /** 訂單過期 */
