@@ -5,7 +5,7 @@
  * Plugin Name: PChomePay Gateway for WooCommerce
  * Plugin URI: https://www.pchomepay.com.tw
  * Description: 讓 WooCommerce 可以使用 PChomePay支付連 進行結帳！水啦！！
- * Version: 0.0.8
+ * Version: 0.0.9
  * Author: PChomePay支付連
  * Author URI: https://www.pchomepay.com.tw
  */
@@ -257,18 +257,22 @@ function pchomepay_gateway_init()
                 global $woocommerce;
 
                 $order = $this->client->getPayment($orderID);
-
                 $order_id = $order->order_id;
 
                 $wcOrder = new WC_Order(substr($order_id, 8));
                 $return_url = $this->get_return_url($wcOrder);
 
-                if ($refundID) {
-                    $number = (int)trim(substr($refundID, -3), 0) + 1;
-                    $refund_id = 'RF' . $order_id . str_pad($number, 3, 0, STR_PAD_LEFT);
+                if ($amount === $order->amount) {
+                    $refund_id = 'RF' . $order_id;
                 } else {
-                    $refund_id = 'RF' . $order_id . '000';
+                    if ($refundID) {
+                        $number = (int)substr($refundID, strpos($refundID, '-') + 1) + 1;
+                        $refund_id = 'RF' . $order_id . '-' . $number;
+                    } else {
+                        $refund_id = 'RF' . $order_id . '-1';
+                    }
                 }
+
                 $trade_amount = (int)$amount;
                 (in_array($order->pay_type, ['ATM', 'EACH'])) ? $cover_transfee = $this->cover_transfee : $cover_transfee = null;
                 $pchomepay_args = [
@@ -289,11 +293,16 @@ function pchomepay_gateway_init()
 
         public function process_refund($order_id, $amount = null, $reason = '')
         {
-            self::log($order_id);
 
             try {
                 $orderID = get_post_meta($order_id, 'pchomepay_orderid', true);
-                $refundID = get_post_meta($order_id, 'pchomepay_refundid', true);
+                $refundIDs = get_post_meta($order_id, 'pchomepay_refundid', true);
+
+                if ($refundIDs) {
+                    $refundID = trim(strrchr($refundIDs, ','), ', ') ? trim(strrchr($refundIDs, ','), ', ') : $refundIDs;
+                } else {
+                    $refundID = $refundIDs;
+                }
 
                 $pchomepay_args = json_encode($this->get_pchomepay_refund_data($orderID, $amount, $refundID));
 
@@ -309,10 +318,10 @@ function pchomepay_gateway_init()
                 if (!$response_data) return false;
 
                 // 更新 meta
-                ($refundID) ? update_post_meta($order_id, 'pchomepay_refundid', $response_data->refund_id) : add_post_meta($order_id, 'pchomepay_refundid', $response_data->refund_id);
+                ($refundID) ? update_post_meta($order_id, 'pchomepay_refundid', $refundIDs . ", " . $response_data->refund_id) : add_post_meta($order_id, 'pchomepay_refundid', $response_data->refund_id);
 
                 if (isset($response_data->redirect_url)) {
-                    (get_post_meta($order_id, 'pchomepay_refund_url', true)) ? update_post_meta($order_id, 'pchomepay_refund_url', $response_data->redirect_url) : add_post_meta($order_id, 'pchomepay_refund_url', $response_data->redirect_url);
+                    (get_post_meta($order_id, 'pchomepay_refund_url', true)) ? update_post_meta($order_id, 'pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url) : add_post_meta($order_id, 'pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url);
                 }
 
                 return true;
