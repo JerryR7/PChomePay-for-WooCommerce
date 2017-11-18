@@ -185,6 +185,12 @@ function pchomepay_gateway_init()
 
                 // 建立訂單
                 $result = $this->client->postPayment($pchomepay_args);
+
+                if (!$result) {
+                    self::log("交易失敗：伺服器端未知錯誤，請聯絡 PChomePay支付連。");
+                    throw new Exception("嘗試使用付款閘道 API 建立訂單時發生錯誤，請聯絡網站管理員。");
+                }
+
                 // 減少庫存
                 wc_reduce_stock_levels($order_id);
                 // 清空購物車
@@ -251,16 +257,13 @@ function pchomepay_gateway_init()
             exit();
         }
 
-        private function get_pchomepay_refund_data($orderID, $amount, $refundID = null)
+        private function get_pchomepay_refund_data($orderID, $amount, $refundID = null, $return_url = null)
         {
             try {
                 global $woocommerce;
 
                 $order = $this->client->getPayment($orderID);
                 $order_id = $order->order_id;
-
-                $wcOrder = new WC_Order(substr($order_id, 8));
-                $return_url = $this->get_return_url($wcOrder);
 
                 if ($amount === $order->amount) {
                     $refund_id = 'RF' . $order_id;
@@ -304,7 +307,10 @@ function pchomepay_gateway_init()
                     $refundID = $refundIDs;
                 }
 
-                $pchomepay_args = json_encode($this->get_pchomepay_refund_data($orderID, $amount, $refundID));
+                $wcOrder = new WC_Order(substr($order_id, 8));
+                $return_url = $this->get_return_url($wcOrder);
+
+                $pchomepay_args = json_encode($this->get_pchomepay_refund_data($orderID, $amount, $refundID, $return_url));
 
                 if (!class_exists('PChomePayClient')) {
                     if (!require(dirname(__FILE__) . '/includes/PChomePayClient.php')) {
@@ -315,7 +321,10 @@ function pchomepay_gateway_init()
                 // 退款
                 $response_data = $this->client->postRefund($pchomepay_args);
 
-                if (!$response_data) return false;
+                if (!$response_data) {
+                    self::log("退款失敗：伺服器端未知錯誤，請聯絡 PChomePay支付連。");
+                    return false;
+                }
 
                 // 更新 meta
                 ($refundID) ? update_post_meta($order_id, 'pchomepay_refundid', $refundIDs . ", " . $response_data->refund_id) : add_post_meta($order_id, 'pchomepay_refundid', $response_data->refund_id);
@@ -323,6 +332,8 @@ function pchomepay_gateway_init()
                 if (isset($response_data->redirect_url)) {
                     (get_post_meta($order_id, 'pchomepay_refund_url', true)) ? update_post_meta($order_id, 'pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url) : add_post_meta($order_id, 'pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url);
                 }
+
+                $wcOrder->add_order_note('退款編號：' . $response_data->refund_id, true);
 
                 return true;
             } catch (Exception $e) {

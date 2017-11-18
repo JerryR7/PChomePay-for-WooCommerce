@@ -144,6 +144,11 @@ class PChomePayClient
             throw new Exception("交易失敗，請聯絡網站管理員。錯誤代碼：" . $obj->code);
         }
 
+        if (empty($obj->token) && empty($obj->order_id)) {
+
+            return false;
+        }
+
         if (isset($obj->status_code)) {
             $this->log("訂單編號：" . $obj->order_id . " 已失敗。\n原因：" . OrderStatusCodeEnum::getErrMsg($obj->status_code));
         }
