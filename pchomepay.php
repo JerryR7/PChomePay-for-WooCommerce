@@ -228,7 +228,11 @@ function pchomepay_gateway_init()
                     $pay_type_note = 'ATM 付款';
                     break;
                 case 'CARD':
-                    $pay_type_note = '信用卡 付款';
+                    if ($order_data->payment_info->installment == 1) {
+                        $pay_type_note = '信用卡 付款 (一次付清)';
+                    } else {
+                        $pay_type_note = '信用卡 分期付款 (' . $order_data->payment_info->installment . '期)';
+                    }
                     break;
                 case 'ACCT':
                     $pay_type_note = '支付連餘額 付款';
