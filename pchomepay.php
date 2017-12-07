@@ -5,7 +5,7 @@
  * Plugin Name: PChomePay Gateway for WooCommerce
  * Plugin URI: https://www.pchomepay.com.tw
  * Description: 讓 WooCommerce 可以使用 PChomePay支付連 進行結帳！水啦！！
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: PChomePay支付連
  * Author URI: https://www.pchomepay.com.tw
  */
@@ -62,7 +62,6 @@ function pchomepay_gateway_init()
             $this->notify_url = WC()->api_request_url(get_class($this));
             $this->payment_methods = $this->get_option('payment_methods');
             $this->card_installment = $this->get_option('card_installment');
-            $this->card_rate = $this->get_option('card_rate');
             $this->cover_transfee = $this->get_option('cover_transfee');
 
             self::$log_enabled = $this->debug;
@@ -109,21 +108,17 @@ function pchomepay_gateway_init()
             $atm_info = (object)['expire_days' => (int)$this->atm_expiredate];
 
             $card_info = [];
-            $card_rate = $this->card_rate == 1 ? null : 0;
 
             foreach ($this->card_installment as $items) {
                 switch ($items) {
                     case 'CRD_3' :
                         $card_installment['installment'] = 3;
-                        $card_installment['rate'] = $card_rate;
                         break;
                     case 'CRD_6' :
                         $card_installment['installment'] = 6;
-                        $card_installment['rate'] = $card_rate;
                         break;
                     case 'CRD_12' :
                         $card_installment['installment'] = 12;
-                        $card_installment['rate'] = $card_rate;
                         break;
                     default :
                         unset($card_installment);

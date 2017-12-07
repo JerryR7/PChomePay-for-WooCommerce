@@ -86,15 +86,6 @@ return array(
             'CRD_12' => __('12 期', 'woocommerce'),
         )
     ),
-    'card_rate' => array(
-        'title' => __('信用卡分期利率', 'woocommerce'),
-        'type' => 'select',
-        'description' => __('信用卡分期利率設定', 'woocommerce'),
-        'options' => array(
-            '0' => __('0 利率', 'woocommerce'),
-            '1' => __('一般信用卡分期利率', 'woocommerce')
-        )
-    ),
     'atm_expiredate' => array(
         'title' => __('ATM 虛擬帳號繳費期限', 'woocommerce'),
         'type' => 'text',
