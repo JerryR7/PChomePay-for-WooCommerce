@@ -243,7 +243,7 @@ function pchomepay_gateway_init()
                 $order->add_order_note($pay_type_note, true);
                 if ($order_data->status_code) {
                     $order->update_status('failed');
-                    $order->add_order_note(sprintf(__('訂單已失敗。<br>Error return code: %1$s', 'woocommerce'), $order_data->status_code), true);
+                    $order->add_order_note(sprintf(__('訂單已失敗。<br>error code: %1$s<br>message: %2$s', 'woocommerce'), $order_data->status_code, OrderStatusCodeEnum::getErrMsg($order_data->status_code)), true);
                 } else {
                     $order->update_status('failed');
                     $order->add_order_note( '訂單已失敗。', true);
