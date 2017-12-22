@@ -93,7 +93,7 @@ function pchomepay_gateway_init()
         {
             global $woocommerce;
 
-            $order_id = date('Ymd') . $order->get_order_number();
+            $order_id = 'AW' . date('Ymd') . $order->get_order_number();
             $pay_type = $this->payment_methods;
             $amount = ceil($order->get_total());
             $return_url = $this->get_return_url($order);
