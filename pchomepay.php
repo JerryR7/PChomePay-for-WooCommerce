@@ -5,7 +5,7 @@
  * Plugin Name: PChomePay Gateway for WooCommerce
  * Plugin URI: https://www.pchomepay.com.tw
  * Description: 讓 WooCommerce 可以使用 PChomePay支付連 進行結帳！水啦！！
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: PChomePay支付連
  * Author URI: https://www.pchomepay.com.tw
  */
@@ -250,6 +250,8 @@ function pchomepay_gateway_init()
             } elseif ($notify_type == 'order_confirm') {
                 $order->add_order_note($pay_type_note, true);
                 $order->payment_complete();
+            } elseif($notify_type == 'order_audit') {
+                $order->add_order_note(sprintf(__('訂單交易等待中。<br>status code: %1$s<br>message: %2$s', 'woocommerce'), $order_data->status_code, OrderStatusCodeEnum::getErrMsg($order_data->status_code)), true);
             }
 
             echo 'success';
