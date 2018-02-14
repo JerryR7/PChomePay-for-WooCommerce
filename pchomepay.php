@@ -93,12 +93,19 @@ function pchomepay_audit_order_action($actions)
 }
 
 //過單
-add_action('woocommerce_order_action_wc_order_pass', 'sv_wc_process_order_meta_box_action');
+add_action('woocommerce_order_action_wc_custom_order_action', 'pchomepay_audit_order_pass');
 
 function pchomepay_audit_order_pass($order)
 {
+    require_once 'includes/PChomePayClient.php';
 
-    // add the order note
+    try {
+        
+
+    } catch (Exception $e) {
+        throw $e;
+    }
+
     // translators: Placeholders: %s is a user's display name
     $message = sprintf(__('Order information printed by %s for packaging.', 'woocommerce'), wp_get_current_user()->display_name);
     $order->add_order_note($message);
@@ -108,7 +115,7 @@ function pchomepay_audit_order_pass($order)
 }
 
 //不過單
-add_action('woocommerce_order_action_wc_order_deny', 'sv_wc_process_order_meta_box_action');
+add_action('woocommerce_order_action_wc_custom_order_action', 'pchomepay_audit_order_deny');
 
 function pchomepay_audit_order_deny($order)
 {
