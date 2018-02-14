@@ -47,6 +47,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         $this->notify_url = WC()->api_request_url(get_class($this));
         $this->payment_methods = $this->get_option('payment_methods');
         $this->card_installment = $this->get_option('card_installment');
+        $this->card_last_number = ($this->get_option('card_last_number') === 'yes') ? true : false;
 
         self::$log_enabled = $this->debug;
 
@@ -151,9 +152,6 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
             $order = new WC_Order($order_id);
 
-            // 更新訂單狀態為等待中 (等待第三方支付網站返回)
-            $order->update_status('pending', __('Awaiting PChomePay payment', 'woocommerce'));
-
             $pchomepay_args = json_encode($this->get_pchomepay_payment_data($order));
 
             if (!class_exists('PChomePayClient')) {
@@ -174,7 +172,10 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             wc_reduce_stock_levels($order_id);
             // 清空購物車
             $woocommerce->cart->empty_cart();
-            add_post_meta($order_id, 'pchomepay_orderid', $result->order_id);
+
+            // 更新訂單狀態為等待中 (等待第三方支付網站返回)
+            $order->update_status('pending', __('Awaiting PChomePay payment', 'woocommerce'));
+            $order->add_order_note('訂單編號: ' . $result->order_id, true);
             // 返回感謝購物頁面跳轉
             return array(
                 'result' => 'success',
@@ -212,6 +213,9 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
                 } else {
                     $pay_type_note = '信用卡 分期付款 (' . $order_data->payment_info->installment . '期)';
                 }
+
+                if ($this->card_last_number) $pay_type_note .= '<br>末四碼: ' . $order_data->payment_info->card_last_number;
+
                 break;
             case 'ACCT':
                 $pay_type_note = '支付連餘額 付款';
@@ -230,12 +234,15 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
                 $order->add_order_note(sprintf(__('訂單已失敗。<br>error code: %1$s<br>message: %2$s', 'woocommerce'), $order_data->status_code, OrderStatusCodeEnum::getErrMsg($order_data->status_code)), true);
             } else {
                 $order->update_status('failed');
-                $order->add_order_note( '訂單已失敗。', true);
+                $order->add_order_note('訂單已失敗。', true);
             }
         } elseif ($notify_type == 'order_confirm') {
             $order->add_order_note($pay_type_note, true);
             $order->payment_complete();
-        } elseif($notify_type == 'order_audit') {
+        } elseif ($notify_type == 'order_audit') {
+            if ($order_data->status_code === 'WA') {
+                $order->update_status('awaiting');
+            }
             $order->add_order_note(sprintf(__('訂單交易等待中。<br>status code: %1$s<br>message: %2$s', 'woocommerce'), $order_data->status_code, OrderStatusCodeEnum::getErrMsg($order_data->status_code)), true);
         }
 
