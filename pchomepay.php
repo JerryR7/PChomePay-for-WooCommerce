@@ -93,14 +93,24 @@ function pchomepay_audit_order_action($actions)
 }
 
 //過單
-add_action('woocommerce_order_action_wc_custom_order_action', 'pchomepay_audit_order_pass');
+add_action('woocommerce_order_action_wc_order_pass', 'pchomepay_audit_order_pass');
 
 function pchomepay_audit_order_pass($order)
 {
     require_once 'includes/PChomePayClient.php';
 
+    require_once 'includes/PChomePayGateway.php';
+
     try {
-        
+        $pchomepayGatway = new  WC_Gateway_PChomePay();
+        $pchomepayGatway->process_audit($order->id, 'PASS');
+
+        if (!$result) {
+            self::log("交易失敗：伺服器端未知錯誤，請聯絡 PChomePay支付連。");
+            throw new Exception("嘗試使用付款閘道 API 建立訂單時發生錯誤，請聯絡網站管理員。");
+        }
+
+        WC_Gateway_PChomePay::log(($order));
 
     } catch (Exception $e) {
         throw $e;
@@ -111,15 +121,14 @@ function pchomepay_audit_order_pass($order)
     $order->add_order_note($message);
 
     // add the flag
-    update_post_meta($order->id, '_wc_order_marked_printed_for_packaging', 'yes');
+//    update_post_meta($order->id, '_wc_order_marked_printed_for_packaging', 'yes');
 }
 
 //不過單
-add_action('woocommerce_order_action_wc_custom_order_action', 'pchomepay_audit_order_deny');
+add_action('woocommerce_order_action_wc_order_deny', 'pchomepay_audit_order_deny');
 
 function pchomepay_audit_order_deny($order)
 {
-
     // add the order note
     // translators: Placeholders: %s is a user's display name
     $message = sprintf(__('Order information printed by %s for packaging.', 'woocommerce'), wp_get_current_user()->display_name);

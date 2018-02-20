@@ -24,7 +24,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         }
 
         $this->id = 'pchomepay';
-        $this->icon = apply_filters('woocommerce_pchomepay_icon', plugins_url('images/pchomepay_logo.png', __FILE__));;
+        $this->icon = apply_filters('woocommerce_pchomepay_icon', plugins_url('images/pchomepay_logo.png', dirname(__FILE__)));
         $this->has_fields = false;
         $this->method_title = __('PChomePay支付連', 'woocommerce');
         $this->method_description = '透過 PChomePay支付連 付款。<br>會連結到 PChomePay支付連 付款頁面。';
@@ -328,6 +328,51 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         } catch (Exception $e) {
             throw $e;
         }
+    }
+
+    private function get_pchomepay_audit_data($wc_order, $status)
+    {
+        $order_id = 'AW' . date_format($wc_order->get_date_created(),'Ymd') . $wc_order->get_id;
+        $order = $this->client->getPayment($order_id);
+
+        $pchomepay_args = [
+            'order_id' => $order->order_id,
+            'status' => $status
+        ];
+
+        $pchomepay_args = apply_filters('woocommerce_pchomepay_args', $pchomepay_args);
+
+        return $pchomepay_args;
+    }
+
+    public function process_audit($order_id, $status)
+    {
+        $wcOrder = new WC_Order($order_id);
+        $pchomepay_args = json_encode($this->get_pchomepay_audit_data($wcOrder, $status));
+
+        if (!class_exists('PChomePayClient')) {
+            if (!require(dirname(__FILE__) . '/PChomePayClient.php')) {
+                throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
+            }
+        }
+
+        $response_data = $this->client->postPaymentAudit($pchomepay_args);
+
+        if ($response_data->status === 'SUCC') {
+
+            switch ($status) {
+                case 'PASS':
+                    $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已過單', true);
+                    break;
+                case 'DENY':
+                    $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已過單', true);
+                    break;
+                default:
+                    throw new Exception(__('審單狀態錯誤', 'woocommerce'));
+            }
+        }
+
+        return true;
     }
 
     /**

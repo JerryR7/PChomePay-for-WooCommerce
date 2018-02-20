@@ -30,6 +30,7 @@ class PChomePayClient
         $this->getPaymentURL = $baseURL . "/payment/{order_id}";
         $this->getRefundURL = $baseURL . "/refund/{refund_id}";
         $this->postRefundURL = $baseURL . "/refund";
+        $this->postPaymentAuditURL = $baseURL . "/payment/audit";
 
         $this->userAuth = "{$this->appID}:{$this->secret}";
     }
@@ -60,6 +61,12 @@ class PChomePayClient
         }
 
         return $this->get_request(str_replace("{order_id}", $orderID, $this->getPaymentURL));
+    }
+
+    // 訂單審單
+    public function postPaymentAudit($data)
+    {
+        return $this->post_request($this->postPaymentAuditURL, $data);
     }
 
     // 取Token
