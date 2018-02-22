@@ -239,6 +239,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             }
         } elseif ($notify_type == 'order_confirm') {
             $order->add_order_note($pay_type_note, true);
+            $order->update_status('pending');
             $order->payment_complete();
         } elseif ($notify_type == 'order_audit') {
             if ($order_data->status_code === 'WA') {
