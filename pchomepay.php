@@ -5,7 +5,7 @@
  * Plugin Name: PChomePay Gateway for WooCommerce
  * Plugin URI: https://www.pchomepay.com.tw
  * Description: 讓 WooCommerce 可以使用 PChomePay支付連 進行結帳！水啦！！
- * Version: 1.0.2
+ * Version: 1.1.0
  * Author: PChomePay支付連
  * Author URI: https://www.pchomepay.com.tw
  */
@@ -101,27 +101,12 @@ function pchomepay_audit_order_pass($order)
 
     require_once 'includes/PChomePayGateway.php';
 
-    try {
-        $pchomepayGatway = new  WC_Gateway_PChomePay();
-        $pchomepayGatway->process_audit($order->id, 'PASS');
+    $pchomepayGatway = new  WC_Gateway_PChomePay();
+    $result = $pchomepayGatway->process_audit($order->id, 'PASS');
 
-        if (!$result) {
-            self::log("交易失敗：伺服器端未知錯誤，請聯絡 PChomePay支付連。");
-            throw new Exception("嘗試使用付款閘道 API 建立訂單時發生錯誤，請聯絡網站管理員。");
-        }
-
-        WC_Gateway_PChomePay::log(($order));
-
-    } catch (Exception $e) {
-        throw $e;
+    if (!$result) {
+        add_action('all_admin_notices', 'admin_notice_error');
     }
-
-    // translators: Placeholders: %s is a user's display name
-    $message = sprintf(__('Order information printed by %s for packaging.', 'woocommerce'), wp_get_current_user()->display_name);
-    $order->add_order_note($message);
-
-    // add the flag
-//    update_post_meta($order->id, '_wc_order_marked_printed_for_packaging', 'yes');
 }
 
 //不過單
@@ -129,13 +114,16 @@ add_action('woocommerce_order_action_wc_order_deny', 'pchomepay_audit_order_deny
 
 function pchomepay_audit_order_deny($order)
 {
-    // add the order note
-    // translators: Placeholders: %s is a user's display name
-    $message = sprintf(__('Order information printed by %s for packaging.', 'woocommerce'), wp_get_current_user()->display_name);
-    $order->add_order_note($message);
+    require_once 'includes/PChomePayClient.php';
 
-    // add the flag
-    update_post_meta($order->id, '_wc_order_marked_printed_for_packaging', 'yes');
+    require_once 'includes/PChomePayGateway.php';
+
+    $pchomepayGatway = new  WC_Gateway_PChomePay();
+    $result = $pchomepayGatway->process_audit($order->id, 'DENY');
+
+    if (!$result) {
+        add_action('all_admin_notices', 'admin_notice_error');
+    }
 }
 
 // Add to list of WC Order statuses
@@ -166,4 +154,13 @@ function add_awaiting_audit_order_statuses($order_statuses)
         }
     }
     return $new_order_statuses;
+}
+
+function admin_notice_error()
+{
+    ?>
+    <div class="notice notice-error is-dismissible">
+        <p><?php _e('嘗試使用付款閘道 API 審單時發生錯誤!'); ?></p>
+    </div>
+    <?php
 }

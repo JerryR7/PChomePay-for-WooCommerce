@@ -174,6 +174,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             $woocommerce->cart->empty_cart();
 
             // 更新訂單狀態為等待中 (等待第三方支付網站返回)
+            add_post_meta($order_id, 'pchomepay_orderid', $result->order_id);
             $order->update_status('pending', __('Awaiting PChomePay payment', 'woocommerce'));
             $order->add_order_note('訂單編號: ' . $result->order_id, true);
             // 返回感謝購物頁面跳轉
@@ -298,6 +299,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             }
 
             $wcOrder = new WC_Order($order_id);
+            $orderNote = $this->get_order_notes($order_id);
 
             $pchomepay_args = json_encode($this->get_pchomepay_refund_data($orderID, $amount, $refundID));
 
@@ -330,9 +332,9 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         }
     }
 
-    private function get_pchomepay_audit_data($wc_order, $status)
+    private function get_pchomepay_audit_data($wcOrder, $status)
     {
-        $order_id = 'AW' . date_format($wc_order->get_date_created(),'Ymd') . $wc_order->get_id;
+        $order_id = 'AW' . date_format($wcOrder->get_date_created(), 'Ymd') . $wcOrder->get_id();
         $order = $this->client->getPayment($order_id);
 
         $pchomepay_args = [
@@ -345,34 +347,47 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         return $pchomepay_args;
     }
 
-    public function process_audit($order_id, $status)
+    public function process_audit($wc_orderid, $status)
     {
-        $wcOrder = new WC_Order($order_id);
-        $pchomepay_args = json_encode($this->get_pchomepay_audit_data($wcOrder, $status));
+        try {
+            $wcOrder = new WC_Order($wc_orderid);
+            $pchomepay_args = json_encode($this->get_pchomepay_audit_data($wcOrder, $status));
 
-        if (!class_exists('PChomePayClient')) {
-            if (!require(dirname(__FILE__) . '/PChomePayClient.php')) {
-                throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
+            if (!class_exists('PChomePayClient')) {
+                if (!require(dirname(__FILE__) . '/PChomePayClient.php')) {
+                    throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
+                }
             }
-        }
 
-        $response_data = $this->client->postPaymentAudit($pchomepay_args);
+            $response_data = $this->client->postPaymentAudit($pchomepay_args);
 
-        if ($response_data->status === 'SUCC') {
+            self::log(json_encode($response_data));
 
-            switch ($status) {
-                case 'PASS':
-                    $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已過單', true);
-                    break;
-                case 'DENY':
-                    $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已過單', true);
-                    break;
-                default:
-                    throw new Exception(__('審單狀態錯誤', 'woocommerce'));
+            if (!$response_data) throw new Exception(__('狀態錯誤', 'woocommerce'));
+
+            if ($response_data->status === 'SUCC') {
+
+                switch ($status) {
+                    case 'PASS':
+                        $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已過單', true);
+                        break;
+                    case 'DENY':
+                        $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已過單', true);
+                        break;
+                    default:
+                        throw new Exception(__('審單狀態錯誤', 'woocommerce'));
+                }
             }
-        }
 
-        return true;
+            return true;
+        } catch (Exception $e) {
+            if ($e->getCode()) {
+                $wcOrder->add_order_note('審單失敗，錯誤代碼：' . $e->getCode());
+            } else {
+                $wcOrder->add_order_note('審單失敗，未知的錯誤原因');
+            }
+            return false;
+        }
     }
 
     /**
@@ -390,5 +405,32 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             }
             self::$log->log($level, $message, array('source' => 'pchomepay'));
         }
+    }
+
+    /**
+     * @param $order_id
+     * @return array
+     */
+    function get_order_notes($order_id)
+    {
+        global $wpdb;
+
+        $table_perfixed = $wpdb->prefix . 'comments';
+        $results = $wpdb->get_results("
+        SELECT *
+        FROM $table_perfixed
+        WHERE  `comment_post_ID` = $order_id
+        AND  `comment_type` LIKE  'order_note'
+    ");
+
+        foreach ($results as $note) {
+            $order_note[] = array(
+                'note_id' => $note->comment_ID,
+                'note_date' => $note->comment_date,
+                'note_author' => $note->comment_author,
+                'note_content' => $note->comment_content,
+            );
+        }
+        return $order_note;
     }
 }
