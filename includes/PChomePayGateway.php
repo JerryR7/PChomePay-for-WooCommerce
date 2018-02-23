@@ -228,7 +228,12 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
                 $pay_type_note = $order_data->pay_type . '付款';
         }
 
-        if ($notify_type == 'order_expired') {
+        if ($notify_type == 'order_audit') {
+            if ($order_data->status_code === 'WA') {
+                $order->update_status('awaiting');
+            }
+            $order->add_order_note(sprintf(__('訂單交易等待中。<br>status code: %1$s<br>message: %2$s', 'woocommerce'), $order_data->status_code, OrderStatusCodeEnum::getErrMsg($order_data->status_code)), true);
+        } elseif ($notify_type == 'order_expired') {
             $order->add_order_note($pay_type_note, true);
             if ($order_data->status_code) {
                 $order->update_status('failed');
@@ -239,13 +244,8 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             }
         } elseif ($notify_type == 'order_confirm') {
             $order->add_order_note($pay_type_note, true);
-            $order->update_status('pending');
-            $order->payment_complete();
-        } elseif ($notify_type == 'order_audit') {
-            if ($order_data->status_code === 'WA') {
-                $order->update_status('awaiting');
-            }
-            $order->add_order_note(sprintf(__('訂單交易等待中。<br>status code: %1$s<br>message: %2$s', 'woocommerce'), $order_data->status_code, OrderStatusCodeEnum::getErrMsg($order_data->status_code)), true);
+            $order->update_status('completed');
+//            $order->payment_complete();
         }
 
         echo 'success';
@@ -259,7 +259,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
             $order = $this->client->getPayment($orderID);
 
-            if (!$order) self::log('查無此筆訂單：'. $orderID);
+            if (!$order) self::log('查無此筆訂單：' . $orderID);
 
             $order_id = $order->order_id;
 
