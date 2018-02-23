@@ -176,7 +176,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             // 更新訂單狀態為等待中 (等待第三方支付網站返回)
             add_post_meta($order_id, '_pchomepay_orderid', $result->order_id);
             $order->update_status('pending', __('Awaiting PChomePay payment', 'woocommerce'));
-            $order->add_order_note('訂單編號: ' . $result->order_id, true);
+            $order->add_order_note('訂單編號：' . $result->order_id, true);
             // 返回感謝購物頁面跳轉
             return array(
                 'result' => 'success',
