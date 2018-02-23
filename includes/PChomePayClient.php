@@ -146,7 +146,7 @@ class PChomePayClient
             throw new Exception("server result error($err) {$errStr}:$result");
         }
 
-        if (!$obj || isset($obj->error_type)) {
+        if (isset($obj->error_type)) {
             $this->log("\n錯誤類型：" . $obj->error_type . "\n錯誤代碼：" . $obj->code . "\n錯誤訊息：" . ApiException::getErrMsg($obj->code));
             throw new Exception("交易失敗，請聯絡網站管理員。錯誤代碼：" . $obj->code, $obj->code);
         }

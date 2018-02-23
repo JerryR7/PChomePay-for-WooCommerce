@@ -174,7 +174,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             $woocommerce->cart->empty_cart();
 
             // 更新訂單狀態為等待中 (等待第三方支付網站返回)
-            add_post_meta($order_id, 'pchomepay_orderid', $result->order_id);
+            add_post_meta($order_id, '_pchomepay_orderid', $result->order_id);
             $order->update_status('pending', __('Awaiting PChomePay payment', 'woocommerce'));
             $order->add_order_note('訂單編號: ' . $result->order_id, true);
             // 返回感謝購物頁面跳轉
@@ -258,6 +258,9 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             global $woocommerce;
 
             $order = $this->client->getPayment($orderID);
+
+            if (!$order) self::log('查無此筆訂單：'. $orderID);
+
             $order_id = $order->order_id;
 
             if ($amount === $order->amount) {
@@ -288,10 +291,12 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
     public function process_refund($order_id, $amount = null, $reason = '')
     {
-
         try {
-            $orderID = get_post_meta($order_id, 'pchomepay_orderid', true);
-            $refundIDs = get_post_meta($order_id, 'pchomepay_refundid', true);
+            $orderID = get_post_meta($order_id, '_pchomepay_orderid', true);
+            $refundIDs = get_post_meta($order_id, '_pchomepay_refundid', true);
+
+            self::log($orderID);
+            self::log($refundIDs);
 
             if ($refundIDs) {
                 $refundID = trim(strrchr($refundIDs, ','), ', ') ? trim(strrchr($refundIDs, ','), ', ') : $refundIDs;
@@ -300,7 +305,6 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             }
 
             $wcOrder = new WC_Order($order_id);
-            $orderNote = $this->get_order_notes($order_id);
 
             $pchomepay_args = json_encode($this->get_pchomepay_refund_data($orderID, $amount, $refundID));
 
@@ -319,10 +323,14 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             }
 
             // 更新 meta
-            ($refundID) ? update_post_meta($order_id, 'pchomepay_refundid', $refundIDs . ", " . $response_data->refund_id) : add_post_meta($order_id, 'pchomepay_refundid', $response_data->refund_id);
+            ($refundID) ? update_post_meta($order_id, '_pchomepay_refundid', $refundIDs . ", " . $response_data->refund_id) : add_post_meta($order_id, '_pchomepay_refundid', $response_data->refund_id);
 
             if (isset($response_data->redirect_url)) {
-                (get_post_meta($order_id, 'pchomepay_refund_url', true)) ? update_post_meta($order_id, 'pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url) : add_post_meta($order_id, 'pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url);
+                if (get_post_meta($order_id, '_pchomepay_refund_url', true)) {
+                    update_post_meta($order_id, '_pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url);
+                } else {
+                    add_post_meta($order_id, '_pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url);
+                }
             }
 
             $wcOrder->add_order_note('退款編號：' . $response_data->refund_id, true);
@@ -362,9 +370,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
             $response_data = $this->client->postPaymentAudit($pchomepay_args);
 
-            self::log(json_encode($response_data));
-
-            if (!$response_data) throw new Exception(__('狀態錯誤', 'woocommerce'));
+            if (!$response_data) throw new Exception(__('審單失敗，未知的錯誤原因', 'woocommerce'));
 
             if ($response_data->status === 'SUCC') {
 
@@ -383,9 +389,11 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             return true;
         } catch (Exception $e) {
             if ($e->getCode()) {
+                self::log('審單失敗，錯誤代碼：' . $e->getCode());
                 $wcOrder->add_order_note('審單失敗，錯誤代碼：' . $e->getCode());
             } else {
-                $wcOrder->add_order_note('審單失敗，未知的錯誤原因');
+                self::log($e->getMessage());
+                $wcOrder->add_order_note($e->getMessage());
             }
             return false;
         }
