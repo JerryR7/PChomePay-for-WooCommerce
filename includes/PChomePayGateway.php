@@ -244,8 +244,8 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             }
         } elseif ($notify_type == 'order_confirm') {
             $order->add_order_note($pay_type_note, true);
-            $order->update_status('completed');
-//            $order->payment_complete();
+            $order->update_status('processing');
+            $order->payment_complete();
         }
 
         echo 'success';
