@@ -95,6 +95,9 @@ class PChomePayClient
         if (!empty($this->tokenStorage->getTokenStr())) {
             try {
                 $tokenObj = json_decode($this->tokenStorage->getTokenStr());
+                if ($this->willExpiredIn($tokenObj)) {
+                    $tokenFail = true;
+                }
             } catch (Exception $ex) {
                 $tokenFail = true;
             }
@@ -103,9 +106,11 @@ class PChomePayClient
         }
 
         //如果沒有資料 或 token 快過期時 , 取得新的 token
-        if ($tokenFail || $this->willExpiredIn($tokenObj)) {
+        if ($tokenFail) {
             $tokenObj = $this->getToken();
             $this->tokenStorage->saveTokenStr(json_encode($tokenObj));
+        } else {
+            $tokenObj = json_decode($this->tokenStorage->getTokenStr());
         }
 
         return $tokenObj;
