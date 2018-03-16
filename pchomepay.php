@@ -105,7 +105,7 @@ function pchomepay_audit_order_pass($order)
     $result = $pchomepayGatway->process_audit($order->id, 'PASS');
 
     if (!$result) {
-        add_action('all_admin_notices', 'admin_notice_error');
+        WC_Admin_Meta_Boxes::add_error('嘗試使用付款閘道 API 審單時發生錯誤!');
     }
 }
 
@@ -122,7 +122,7 @@ function pchomepay_audit_order_deny($order)
     $result = $pchomepayGatway->process_audit($order->id, 'DENY');
 
     if (!$result) {
-        add_action('all_admin_notices', 'admin_notice_error');
+        WC_Admin_Meta_Boxes::add_error('嘗試使用付款閘道 API 審單時發生錯誤!');
     }
 }
 
@@ -154,13 +154,4 @@ function add_awaiting_audit_order_statuses($order_statuses)
         }
     }
     return $new_order_statuses;
-}
-
-function admin_notice_error()
-{
-    ?>
-    <div class="notice notice-error is-dismissible">
-        <p><?php _e('嘗試使用付款閘道 API 審單時發生錯誤!'); ?></p>
-    </div>
-    <?php
 }

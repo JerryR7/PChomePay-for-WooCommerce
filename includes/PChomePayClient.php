@@ -1,7 +1,4 @@
 <?php
-
-if (!defined('ABSPATH')) exit;
-
 /**
  * Created by PhpStorm.
  * User: Jerry
@@ -9,13 +6,17 @@ if (!defined('ABSPATH')) exit;
  * Time: 上午10:36
  */
 
+if (!defined('ABSPATH')) exit;
+
 include_once('ApiException.php');
 include_once('OrderStatusCodeEnum.php');
+include_once('FileTokenStorage.php');
 
 class PChomePayClient
 {
     const BASE_URL = "https://api.pchomepay.com.tw/v1";
     const SB_BASE_URL = "https://sandbox-api.pchomepay.com.tw/v1";
+    const TOKEN_EXPIRE_SEC = 1800;
 
     public function __construct($appID, $secret, $sandboxSecret, $sandBox = false, $debug = false)
     {
@@ -33,6 +34,7 @@ class PChomePayClient
         $this->postPaymentAuditURL = $baseURL . "/payment/audit";
 
         $this->userAuth = "{$this->appID}:{$this->secret}";
+        $this->tokenStorage = new FileTokenStorage();
     }
 
     // 紀錄log
@@ -86,9 +88,38 @@ class PChomePayClient
         return $this->handleResult($body);
     }
 
+    protected function validateTokenExpiredIn()
+    {
+        $tokenFail = false;
+
+        if (!empty($this->tokenStorage->getTokenStr())) {
+            try {
+                $tokenObj = json_decode($this->tokenStorage->getTokenStr());
+            } catch (Exception $ex) {
+                $tokenFail = true;
+            }
+        } else {
+            $tokenFail = true;
+        }
+
+        //如果沒有資料 或 token 快過期時 , 取得新的 token
+        if ($tokenFail || $this->willExpiredIn($tokenObj)) {
+            $tokenObj = $this->getToken();
+            $this->tokenStorage->saveTokenStr(json_encode($tokenObj));
+        }
+
+        return $tokenObj;
+
+    }
+
+    private function willExpiredIn($tokenObj)
+    {
+        return (time() + PChomePayClient::TOKEN_EXPIRE_SEC) > $tokenObj->expired_timestamp;
+    }
+
     protected function post_request($method, $postdata)
     {
-        $token = $this->getToken();
+        $token = $this->validateTokenExpiredIn();
 
         $r = wp_remote_post($method, array(
             'headers' => array(
