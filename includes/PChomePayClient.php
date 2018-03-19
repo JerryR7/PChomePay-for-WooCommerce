@@ -141,7 +141,7 @@ class PChomePayClient
 
     protected function get_request($method)
     {
-        $token = $this->getToken();
+        $token = $this->validateTokenExpiredIn();
 
         $r = wp_remote_get($method, array(
             'headers' => array(

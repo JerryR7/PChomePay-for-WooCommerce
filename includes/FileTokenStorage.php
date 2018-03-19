@@ -15,7 +15,7 @@ class FileTokenStorage
     public function __construct($filePath = null)
     {
         if($filePath == null){
-            $this->fileName = dirname(__FILE__)."/pchomepay_api_token.json";
+            $this->fileName = dirname(dirname(__FILE__))."/pchomepay_api_token.json";
         }else{
             $this->fileName = $filePath;
         }
