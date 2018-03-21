@@ -5,7 +5,7 @@
  * Plugin Name: PChomePay Gateway for WooCommerce
  * Plugin URI: https://www.pchomepay.com.tw
  * Description: 讓 WooCommerce 可以使用 PChomePay支付連 進行結帳！水啦！！
- * Version: 1.2.1
+ * Version: 1.2.2
  * Author: PChomePay支付連
  * Author URI: https://www.pchomepay.com.tw
  */
@@ -151,6 +151,36 @@ function add_awaiting_audit_order_statuses($order_statuses)
         $new_order_statuses[$key] = $status;
         if ('wc-processing' === $key) {
             $new_order_statuses['wc-awaiting'] = '等待審單';
+        }
+    }
+    return $new_order_statuses;
+}
+
+// Add to list of WC Order statuses
+add_action('init', 'register_awaiting_pchomepay_audit_order_status');
+
+function register_awaiting_pchomepay_audit_order_status()
+{
+    register_post_status('wc-awaitingforpcpay', array(
+        'label' => '等待支付連審單',
+        'public' => true,
+        'exclude_from_search' => false,
+        'show_in_admin_all_list' => true,
+        'show_in_admin_status_list' => true,
+        'label_count' => _n_noop('等待支付連審單 <span class="count">(%s)</span>', '等待支付連審單 <span class="count">(%s)</span>')
+    ));
+}
+
+add_filter('wc_order_statuses', 'add_awaiting_pchomepay_audit_order_statuses');
+
+function add_awaiting_pchomepay_audit_order_statuses($order_statuses)
+{
+    $new_order_statuses = array();
+    // add new order status after processing
+    foreach ($order_statuses as $key => $status) {
+        $new_order_statuses[$key] = $status;
+        if ('wc-processing' === $key) {
+            $new_order_statuses['wc-awaitingforpcpay'] = '等待支付連審單';
         }
     }
     return $new_order_statuses;
