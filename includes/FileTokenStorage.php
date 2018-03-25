@@ -12,10 +12,14 @@ class FileTokenStorage
 {
     private $fileName;
 
-    public function __construct($filePath = null)
+    public function __construct($filePath = null, $sandBox = false)
     {
         if($filePath == null){
-            $this->fileName = dirname(dirname(__FILE__))."/pchomepay_api_token.json";
+            if ($sandBox) {
+                $this->fileName = dirname(dirname(__FILE__))."/sandbox_pchomepay_api_token.json";
+            } else {
+                $this->fileName = dirname(dirname(__FILE__))."/pchomepay_api_token.json";
+            }
         }else{
             $this->fileName = $filePath;
         }

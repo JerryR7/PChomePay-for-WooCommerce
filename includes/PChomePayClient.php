@@ -34,7 +34,7 @@ class PChomePayClient
         $this->postPaymentAuditURL = $baseURL . "/payment/audit";
 
         $this->userAuth = "{$this->appID}:{$this->secret}";
-        $this->tokenStorage = new FileTokenStorage();
+        $this->tokenStorage = new FileTokenStorage(null, $sandBox);
     }
 
     // 紀錄log
@@ -109,10 +109,8 @@ class PChomePayClient
         if ($tokenFail) {
             $tokenObj = $this->getToken();
             $this->tokenStorage->saveTokenStr(json_encode($tokenObj));
-            $this->log('new token: ' . $tokenObj->token);
         } else {
             $tokenObj = json_decode($this->tokenStorage->getTokenStr());
-            $this->log('using session token: ' . $tokenObj->token);
         }
 
         return $tokenObj;
