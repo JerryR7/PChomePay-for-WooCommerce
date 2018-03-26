@@ -382,7 +382,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
                         $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已過單', true);
                         break;
                     case 'DENY':
-                        $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已過單', true);
+                        $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已拒絕', true);
                         break;
                     default:
                         throw new Exception(__('審單狀態錯誤', 'woocommerce'));
