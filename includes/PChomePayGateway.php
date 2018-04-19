@@ -15,6 +15,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
     /** @var WC_Logger Logger instance */
     public static $log = false;
+//    public static $customize_order_received_text;
 
     public function __construct()
     {
@@ -49,6 +50,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         $this->card_installment = $this->get_option('card_installment');
         $this->card_last_number = ($this->get_option('card_last_number') === 'yes') ? true : false;
 
+//        self::$customize_order_received_text = $this->get_option('customize_order_received_text');
         self::$log_enabled = $this->debug;
 
         if (empty($this->app_id) || empty($this->secret)) {
@@ -207,7 +209,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         switch ($order_data->pay_type) {
             case 'ATM':
                 $pay_type_note = 'ATM 付款';
-                $pay_type_note .= '<br>ATM虛擬帳號: [' . $order_data->payment_info->bank_code . '] [' . $order_data->payment_info->virtual_account . ']';
+                $pay_type_note .= '<br>ATM虛擬帳號: ' . $order_data->payment_info->bank_code . ' - ' . $order_data->payment_info->virtual_account;
                 break;
             case 'CARD':
                 if ($order_data->payment_info->installment == 1) {
