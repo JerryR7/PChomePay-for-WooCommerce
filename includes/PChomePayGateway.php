@@ -193,7 +193,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
     public function receive_response()
     {
-        sleep(1);
+        usleep(5000);
 
         $notify_type = $_REQUEST['notify_type'];
         $notify_message = $_REQUEST['notify_message'];
