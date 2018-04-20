@@ -193,6 +193,8 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
     public function receive_response()
     {
+        usleep(200);
+
         $notify_type = $_REQUEST['notify_type'];
         $notify_message = $_REQUEST['notify_message'];
 
@@ -381,11 +383,11 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             if ($response_data->status === 'SUCC') {
 
                 switch ($status) {
-                    case 'DENY':
-                        $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已拒絕', true);
-                        break;
                     case 'PASS':
                         $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已過單', true);
+                        break;
+                    case 'DENY':
+                        $wcOrder->add_order_note('訂單編號：' . $response_data->order_id . '已拒絕', true);
                         break;
                     default:
                         throw new Exception(__('審單狀態錯誤', 'woocommerce'));
