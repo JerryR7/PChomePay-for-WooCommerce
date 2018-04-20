@@ -1,6 +1,6 @@
 # PChomePay-for-WooCommerce
 
-~Current Version:1.3.4~
+~Current Version:1.3.5~
 
 This plugin can quickly add [PChomePay](https://www.pchomepay.com.tw/) payment to your WooCommerce site!
 
