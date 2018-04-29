@@ -42,13 +42,13 @@ function pchomepay_gateway_init()
     add_filter('woocommerce_payment_gateways', 'add_pchomepay_gateway_class');
     add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'add_pchomepay_settings_link');
 
-//    function customize_order_received_text($text, $order)
-//    {
-//        $message = WC_Gateway_PChomePay::$customize_order_received_text;
-//        return $message;
-//    }
-//
-//    add_filter('woocommerce_thankyou_order_received_text', 'customize_order_received_text', 10, 2);
+    function customize_order_received_text($text, $order)
+    {
+        $message = WC_Gateway_PChomePay::$customize_order_received_text;
+        return $message;
+    }
+
+    add_filter('woocommerce_thankyou_order_received_text', 'customize_order_received_text', 10, 2);
 
 }
 
