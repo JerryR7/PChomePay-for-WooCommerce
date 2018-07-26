@@ -234,12 +234,12 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         }
 
         if ($notify_type == 'order_audit') {
+            $order->add_order_note($pay_type_note, true);
             if ($order_data->status_code === OrderStatusCodeEnum::ORDER_PENDING_CLIENT) {
                 $order->update_status('awaiting');
             } elseif ($order_data->status_code === OrderStatusCodeEnum::ORDER_PENDING_PCHOMEPAY) {
                 $order->update_status('awaitingforpcpay');
             }
-
             $order->add_order_note(sprintf(__('訂單交易等待中。<br>status code: %1$s<br>message: %2$s', 'woocommerce'), $order_data->status_code, OrderStatusCodeEnum::getErrMsg($order_data->status_code)), true);
         } elseif ($notify_type == 'order_expired') {
             $order->add_order_note($pay_type_note, true);
