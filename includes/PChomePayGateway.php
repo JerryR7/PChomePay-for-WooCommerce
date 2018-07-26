@@ -230,7 +230,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
                 $pay_type_note = '銀行支付 付款';
                 break;
             default:
-                $pay_type_note = $order_data->pay_type . '付款';
+                $pay_type_note = '未選擇付款方式';
         }
 
         if ($notify_type == 'order_audit') {
