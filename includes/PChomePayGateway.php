@@ -198,6 +198,19 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         $notify_type = $_REQUEST['notify_type'];
         $notify_message = $_REQUEST['notify_message'];
 
+        $refund_array = ['refund_pending', 'refund_success', 'refund_fail'];
+
+        if (in_array($notify_type, $refund_array)) {
+            $order_data = json_decode(str_replace('\"', '"', $notify_message));
+
+            $order = new WC_Order(substr($order_data->refund_id, 13));
+
+            $order->add_order_note($_REQUEST['notify_message'], true);
+            add_post_meta(substr($order_data->refund_id, 13), '_pchomepay_refund_url', $_REQUEST['notify_message']);
+            echo 'success';
+            exit();
+        }
+
         if (!$notify_type || !$notify_message) {
             http_response_code(404);
             exit;
@@ -206,15 +219,6 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         $order_data = json_decode(str_replace('\"', '"', $notify_message));
 
         $order = new WC_Order(substr($order_data->order_id, 10));
-
-        $refund_array = ['refund_pending', 'refund_success', 'refund_fail'];
-
-        if (in_array($notify_type, $refund_array)) {
-            $order->add_order_note($_REQUEST['notify_message'], true);
-            add_post_meta(substr($order_data->order_id, 10), '_pchomepay_refund_url', $_REQUEST['notify_message']);
-            echo 'success';
-            exit();
-        }
 
         # 紀錄訂單付款方式
         switch ($order_data->pay_type) {
