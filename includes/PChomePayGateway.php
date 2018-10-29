@@ -211,6 +211,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
         if (in_array($notify_type, $refund_array)) {
             $order->add_order_note($_REQUEST['notify_message'], true);
+            add_post_meta(substr($order_data->order_id, 10), '_pchomepay_refund_url', $_REQUEST['notify_message']);
             echo 'success';
             exit();
         }
