@@ -207,6 +207,14 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
         $order = new WC_Order(substr($order_data->order_id, 10));
 
+        $refund_array = ['refund_pending', 'refund_success', 'refund_fail'];
+
+        if (in_array($notify_type, $refund_array)) {
+            $order->add_order_note($_REQUEST['notify_message'], true);
+            echo 'success';
+            exit();
+        }
+
         # 紀錄訂單付款方式
         switch ($order_data->pay_type) {
             case 'ATM':
