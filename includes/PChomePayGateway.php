@@ -6,7 +6,7 @@
  * Time: 上午10:26
  */
 
-if (!defined('ABSPATH')) exit;
+defined('ABSPATH') || exit;
 
 class WC_Gateway_PChomePay extends WC_Payment_Gateway
 {
@@ -16,6 +16,27 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
     /** @var WC_Logger Logger instance */
     public static $log = false;
     public static $customize_order_received_text;
+
+    public $id;
+    public $icon;
+    public $has_fields;
+    public $method_title;
+    public $method_description;
+    public $supports;
+    public $enabled;
+    public $title;
+    public $description;
+    public $app_id;
+    public $secret;
+    public $sandbox_secret;
+    public $atm_expiredate;
+    public $test_mode;
+    public $debug;
+    public $notify_url;
+    public $payment_methods;
+    public $card_installment;
+    public $card_last_number;
+    public $client;
 
     public function __construct()
     {
@@ -28,7 +49,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         $this->icon = apply_filters('woocommerce_pchomepay_icon', plugins_url('images/pchomepay_logo.png', dirname(__FILE__)));
         $this->has_fields = false;
         $this->method_title = __('PChomePay支付連', 'woocommerce');
-        $this->method_description = '透過 PChomePay支付連 付款。<br>會連結到 PChomePay支付連 付款頁面。';
+        $this->method_description = '透過 PChomePay支付連 付款，會連結到 PChomePay支付連 付款頁面。';
         $this->supports = array('products', 'refunds');
 
         $this->init_form_fields();
@@ -70,11 +91,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
     public function admin_options()
     {
-        ?>
-        <h2><?php _e('PChomePay 收款模組', 'woocommerce'); ?></h2>
-        <table class="form-table">
-            <?php $this->generate_settings_html(); ?>
-        </table> <?php
+        parent::admin_options();
     }
 
     private function get_pchomepay_payment_data($order)
@@ -140,11 +157,11 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             'atm_info' => $atm_info,
         ];
 
-        if ($card_info) $pchomepay_args['card_info'] = $card_info;
+        if ($card_info) {
+            $pchomepay_args['card_info'] = $card_info;
+        }
 
-        $pchomepay_args = apply_filters('woocommerce_pchomepay_args', $pchomepay_args);
-
-        return $pchomepay_args;
+        return apply_filters('woocommerce_pchomepay_args', $pchomepay_args);
     }
 
     public function process_payment($order_id)

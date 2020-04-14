@@ -6,7 +6,7 @@
  * Time: 上午10:36
  */
 
-if (!defined('ABSPATH')) exit;
+defined('ABSPATH') || exit;
 
 include_once('ApiException.php');
 include_once('OrderStatusCodeEnum.php');

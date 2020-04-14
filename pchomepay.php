@@ -5,12 +5,12 @@
  * Plugin Name: PChomePay Gateway for WooCommerce
  * Plugin URI: https://www.pchomepay.com.tw
  * Description: 讓 WooCommerce 可以使用 PChomePay支付連 進行結帳！水啦！！
- * Version: 1.4.1
+ * Version: 1.5.1
  * Author: PChomePay支付連
  * Author URI: https://www.pchomepay.com.tw
  */
 
-if (!defined('ABSPATH')) exit;
+defined('ABSPATH') || exit;
 
 add_action('plugins_loaded', 'pchomepay_gateway_init', 0);
 
@@ -22,7 +22,6 @@ function pchomepay_gateway_init()
     }
 
     require_once 'includes/PChomePayClient.php';
-
     require_once 'includes/PChomePayGateway.php';
 
     function add_pchomepay_gateway_class($methods)
@@ -44,19 +43,16 @@ function pchomepay_gateway_init()
 
     function customize_order_received_text($text, $order)
     {
-        $message = WC_Gateway_PChomePay::$customize_order_received_text;
-        return $message;
+        return WC_Gateway_PChomePay::$customize_order_received_text;
     }
 
     add_filter('woocommerce_thankyou_order_received_text', 'customize_order_received_text', 10, 2);
-
 }
 
 add_action('init', 'pchomepay_plugin_updater_init');
 
 function pchomepay_plugin_updater_init()
 {
-
     include_once 'includes/updater.php';
 
     define('WP_GITHUB_FORCE_UPDATE', true);
@@ -78,9 +74,7 @@ function pchomepay_plugin_updater_init()
         );
 
         new WP_GitHub_Updater($config);
-
     }
-
 }
 
 //審單功能
@@ -106,7 +100,6 @@ add_action('woocommerce_order_action_wc_order_pass', 'pchomepay_audit_order_pass
 function pchomepay_audit_order_pass($order)
 {
     require_once 'includes/PChomePayClient.php';
-
     require_once 'includes/PChomePayGateway.php';
 
     $pchomepayGatway = new  WC_Gateway_PChomePay();
@@ -123,7 +116,6 @@ add_action('woocommerce_order_action_wc_order_deny', 'pchomepay_audit_order_deny
 function pchomepay_audit_order_deny($order)
 {
     require_once 'includes/PChomePayClient.php';
-
     require_once 'includes/PChomePayGateway.php';
 
     $pchomepayGatway = new  WC_Gateway_PChomePay();
