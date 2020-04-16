@@ -14,9 +14,20 @@ include_once('FileTokenStorage.php');
 
 class PChomePayClient
 {
-    const BASE_URL = "https://api.pchomepay.com.tw/v1";
-    const SB_BASE_URL = "https://sandbox-api.pchomepay.com.tw/v1";
+    const BASE_URL = "https://api.pchomepay.com.tw";
+    const SB_BASE_URL = "https://sandbox-api.pchomepay.com.tw";
     const TOKEN_EXPIRE_SEC = 1800;
+
+    private $debug;
+    private $appID;
+    private $secret;
+    private $tokenURL;
+    private $postPaymentURL;
+    private $getPaymentURL;
+    private $getRefundURL;
+    private $postRefundURL;
+    private $postPaymentAuditURL;
+    private $tokenStorage;
 
     public function __construct($appID, $secret, $sandboxSecret, $sandBox = false, $debug = false)
     {
@@ -25,22 +36,22 @@ class PChomePayClient
         $this->debug = $debug;
         $this->appID = $appID;
         $this->secret = $sandBox ? $sandboxSecret : $secret;
+        $this->tokenURL = $baseURL . "/v1/token";
+        $this->postPaymentURL = $baseURL . "/v1/payment";
+        $this->getPaymentURL = $baseURL . "/v1/payment/{order_id}";
+        $this->getRefundURL = $baseURL . "/v1/refund/{refund_id}";
+        $this->postRefundURL = $baseURL . "/v2/refund";
+        $this->postPaymentAuditURL = $baseURL . "/v1/payment/audit";
 
-        $this->tokenURL = $baseURL . "/token";
-        $this->postPaymentURL = $baseURL . "/payment";
-        $this->getPaymentURL = $baseURL . "/payment/{order_id}";
-        $this->getRefundURL = $baseURL . "/refund/{refund_id}";
-        $this->postRefundURL = $baseURL . "/refund";
-        $this->postPaymentAuditURL = $baseURL . "/payment/audit";
-
-        $this->userAuth = "{$this->appID}:{$this->secret}";
         $this->tokenStorage = new FileTokenStorage(null, $sandBox);
     }
 
     // 紀錄log
     private function log($message)
     {
-        if ($this->debug) WC_Gateway_PCHomePay::log($message);
+        if ($this->debug) {
+            WC_Gateway_PCHomePay::log($message);
+        }
     }
 
     // 建立訂單

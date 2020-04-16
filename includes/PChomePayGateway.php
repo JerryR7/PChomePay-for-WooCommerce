@@ -101,8 +101,8 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         $order_id = 'AW' . date('Ymd') . $order->get_order_number();
         $pay_type = $this->payment_methods;
         $amount = ceil($order->get_total());
-        $return_url = $this->get_return_url($order);
-        $notify_url = $this->notify_url;
+        $returnUrl = $this->get_return_url($order);
+        $notifyUrl = $this->notify_url;
         $buyer_email = $order->get_billing_email();
 
         if (isset($this->atm_expiredate) && (!preg_match('/^\d*$/', $this->atm_expiredate) || $this->atm_expiredate < 1 || $this->atm_expiredate > 5)) {
@@ -150,8 +150,8 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             'order_id' => $order_id,
             'pay_type' => $pay_type,
             'amount' => $amount,
-            'return_url' => $return_url,
-            'notify_url' => $notify_url,
+            'return_url' => $returnUrl,
+            'notify_url' => $notifyUrl,
             'items' => $items,
             'buyer_email' => $buyer_email,
             'atm_info' => $atm_info,
@@ -258,6 +258,12 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             case 'EACH':
                 $pay_type_note = '銀行支付 付款';
                 break;
+            case 'IPL7':
+                $pay_type_note = '7-11超商 付款';
+                break;
+            case 'IPPI':
+                $pay_type_note = 'PI拍錢包 付款';
+                break;
             default:
                 $pay_type_note = '未選擇付款方式';
         }
@@ -296,7 +302,9 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
             $order = $this->client->getPayment($orderID);
 
-            if (!$order) self::log('查無此筆訂單：' . $orderID);
+            if (!$order) {
+                self::log('查無此筆訂單：' . $orderID);
+            }
 
             $order_id = $order->order_id;
 
@@ -318,10 +326,9 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
                 'trade_amount' => $trade_amount,
             ];
 
-            $pchomepay_args = apply_filters('woocommerce_pchomepay_args', $pchomepay_args);
-
-            return $pchomepay_args;
+            return apply_filters('woocommerce_pchomepay_args', $pchomepay_args);
         } catch (Exception $e) {
+            self::log($e->getMessage());
             throw $e;
         }
     }
@@ -331,9 +338,6 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         try {
             $orderID = get_post_meta($order_id, '_pchomepay_orderid', true);
             $refundIDs = get_post_meta($order_id, '_pchomepay_refundid', true);
-
-            self::log($orderID);
-            self::log($refundIDs);
 
             if ($refundIDs) {
                 $refundID = trim(strrchr($refundIDs, ','), ', ') ? trim(strrchr($refundIDs, ','), ', ') : $refundIDs;
@@ -345,10 +349,8 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
             $pchomepay_args = json_encode($this->get_pchomepay_refund_data($orderID, $amount, $refundID));
 
-            if (!class_exists('PChomePayClient')) {
-                if (!require(dirname(__FILE__) . '/PChomePayClient.php')) {
-                    throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
-                }
+            if (!class_exists('PChomePayClient') && !require(dirname(__FILE__) . '/PChomePayClient.php')) {
+                throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
             }
 
             // 退款
@@ -374,6 +376,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
             return true;
         } catch (Exception $e) {
+            self::log($e->getMessage());
             throw $e;
         }
     }
