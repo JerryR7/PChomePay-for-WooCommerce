@@ -82,6 +82,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
         add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'receive_response'));
+        add_filter( 'https_ssl_verify', '__return_false' );
     }
 
     public function init_form_fields()
