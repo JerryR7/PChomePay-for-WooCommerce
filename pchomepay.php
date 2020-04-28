@@ -77,7 +77,7 @@ function pchomepay_plugin_updater_init()
     }
 }
 
-//審單功能
+// 審單功能
 add_action('woocommerce_order_actions', 'pchomepay_audit_order_action');
 
 function pchomepay_audit_order_action($actions)
@@ -85,7 +85,7 @@ function pchomepay_audit_order_action($actions)
     global $theorder;
 
     // bail if the order has been paid for or this action has been run
-    if ($theorder->get_status() != 'awaiting') {
+    if ($theorder->get_status() != 'awaiting' || $theorder->payment_method != 'pchomepay') {
         return $actions;
     }
 
@@ -94,7 +94,7 @@ function pchomepay_audit_order_action($actions)
     return $actions;
 }
 
-//過單
+// 過單
 add_action('woocommerce_order_action_wc_order_pass', 'pchomepay_audit_order_pass');
 
 function pchomepay_audit_order_pass($order)
@@ -110,7 +110,7 @@ function pchomepay_audit_order_pass($order)
     }
 }
 
-//不過單
+// 不過單
 add_action('woocommerce_order_action_wc_order_deny', 'pchomepay_audit_order_deny');
 
 function pchomepay_audit_order_deny($order)
@@ -184,4 +184,73 @@ function add_awaiting_pchomepay_audit_order_statuses($order_statuses)
         }
     }
     return $new_order_statuses;
+}
+
+// 7-11查詢物流歷程功能
+add_action('woocommerce_order_actions', 'pchomepay_query_711_order_action');
+
+function pchomepay_query_711_order_action($actions)
+{
+    global $theorder;
+
+    if ($theorder->get_meta('_pchomepay_paytype') != 'IPL7' || $theorder->payment_method != 'pchomepay') {
+        return $actions;
+    }
+
+    $actions['wc_711_order_query'] = __('PChomePay - 超商物流歷程', 'woocommerce');
+    return $actions;
+}
+
+// 7-11物流歷程查詢
+add_action('woocommerce_order_action_wc_711_order_query', 'pchomepay_query_711_order');
+
+function pchomepay_query_711_order($order)
+{
+    require_once 'includes/PChomePayClient.php';
+    require_once 'includes/PChomePayGateway.php';
+
+    $pchomepayGateway = new  WC_Gateway_PChomePay();
+    $url = $pchomepayGateway->process_query711_history_page($order->id);
+
+    if (!$url) {
+        WC_Admin_Meta_Boxes::add_error('嘗試使用付款閘道 API 審單時發生錯誤!');
+    }
+
+    wp_safe_redirect($url);
+    exit;
+}
+
+// 顧客訂單頁面 7-11物流歷程查詢
+add_filter( 'woocommerce_my_account_my_orders_actions', 'add_my_account_my_orders_custom_action', 10, 2 );
+function add_my_account_my_orders_custom_action( $actions, $order ) {
+    if ($order->get_meta('_pchomepay_paytype') == 'IPL7' && $order->payment_method == 'pchomepay') {
+
+        require_once 'includes/PChomePayClient.php';
+        require_once 'includes/PChomePayGateway.php';
+
+        $pchomepayGateway = new  WC_Gateway_PChomePay();
+        $url = $pchomepayGateway->process_query711_history_page($order->id);
+
+        $action_slug = 'pchomepay_ipl7';
+        $actions[$action_slug] = array(
+            'url'  => $url,
+            'name' => '物流歷程',
+        );
+    }
+    return $actions;
+}
+
+// Jquery script
+add_action( 'woocommerce_after_account_orders', 'action_after_account_orders_js');
+function action_after_account_orders_js() {
+    $action_slug = 'pchomepay_ipl7';
+    ?>
+    <script>
+        jQuery(function($){
+            $('a.<?php echo $action_slug; ?>').each( function(){
+                $(this).attr('target','_blank');
+            })
+        });
+    </script>
+    <?php
 }

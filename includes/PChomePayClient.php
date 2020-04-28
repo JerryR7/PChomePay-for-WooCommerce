@@ -27,6 +27,7 @@ class PChomePayClient
     private $getRefundURL;
     private $postRefundURL;
     private $postPaymentAuditURL;
+    private $get711HistoryPageURL;
     private $tokenStorage;
 
     public function __construct($appID, $secret, $sandboxSecret, $sandBox = false, $debug = false)
@@ -42,6 +43,7 @@ class PChomePayClient
         $this->getRefundURL = $baseURL . "/v1/refund/{refund_id}";
         $this->postRefundURL = $baseURL . "/v2/refund";
         $this->postPaymentAuditURL = $baseURL . "/v1/payment/audit";
+        $this->get711HistoryPageURL = $baseURL . "/v1/logistic/query/{order_id}/history-page";
 
         $this->tokenStorage = new FileTokenStorage(null, $sandBox);
     }
@@ -80,6 +82,16 @@ class PChomePayClient
     public function postPaymentAudit($data)
     {
         return $this->post_request($this->postPaymentAuditURL, $data);
+    }
+
+    // 查詢711訂單物流歷程頁面
+    public function get711HistoryPage($orderID)
+    {
+        if (!is_string($orderID) || stristr($orderID, "/")) {
+            throw new Exception('Order does not exist!', 20002);
+        }
+
+        return $this->get_request(str_replace("{order_id}", $orderID, $this->get711HistoryPageURL));
     }
 
     // 取Token
@@ -198,7 +210,7 @@ class PChomePayClient
             throw new Exception("交易失敗，請聯絡網站管理員。錯誤代碼：" . $obj->code, $obj->code);
         }
 
-        if (empty($obj->token) && empty($obj->order_id)) {
+        if (empty($obj->token) && empty($obj->order_id) && empty($obj->logistic_id)) {
 
             return false;
         }

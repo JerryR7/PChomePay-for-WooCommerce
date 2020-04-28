@@ -95,6 +95,25 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         parent::admin_options();
     }
 
+//    /**
+//     * 前端付款方式顯示
+//     * Display the form when chooses O'Pay payment
+//     */
+//    public function payment_fields()
+//    {
+//        if (!empty($this->description)) {
+//            echo $this->description . '<br /><br />';
+//        }
+//        echo __('Payment Method', 'woocommerce') . ' : ';
+//        echo '<select name="'. $this->id .'_choose_payment">';
+//        foreach ($this->payment_methods as $method) {
+//            echo '  <option value="' . $method . '">';
+//            echo '    ' . $method;
+//            echo '  </option>';
+//        }
+//        echo '</select>';
+//    }
+
     private function get_pchomepay_payment_data($order)
     {
         global $woocommerce;
@@ -234,8 +253,8 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         }
 
         $order_data = json_decode(str_replace('\"', '"', $notify_message));
-
-        $order = new WC_Order(substr($order_data->order_id, 10));
+        $wc_order_id = substr($order_data->order_id, 10);
+        $order = new WC_Order($wc_order_id);
 
         # 紀錄訂單付款方式
         switch ($order_data->pay_type) {
@@ -267,6 +286,10 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
                 break;
             default:
                 $pay_type_note = '未選擇付款方式';
+        }
+
+        if (!get_post_meta($wc_order_id, '_pchomepay_paytype', true)) {
+            add_post_meta($wc_order_id, '_pchomepay_paytype', $order_data->pay_type);
         }
 
         if ($notify_type == 'order_audit') {
@@ -428,6 +451,40 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
             }
 
             return true;
+        } catch (Exception $e) {
+            if ($e->getCode()) {
+                self::log('審單失敗，錯誤代碼：' . $e->getCode());
+                $wcOrder->add_order_note('審單失敗，錯誤代碼：' . $e->getCode());
+            } else {
+                self::log($e->getMessage());
+                $wcOrder->add_order_note($e->getMessage());
+            }
+            return false;
+        }
+    }
+
+    public function process_query711_history_page($wc_orderid)
+    {
+        try {
+            $wcOrder = new WC_Order($wc_orderid);
+
+            if (!class_exists('PChomePayClient')) {
+                if (!require(dirname(__FILE__) . '/PChomePayClient.php')) {
+                    throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
+                }
+            }
+
+            $response_data = $this->client->get711HistoryPage($wcOrder->get_meta('_pchomepay_orderid'));
+
+            if (!$response_data) {
+                throw new Exception(__('查詢失敗，未知的錯誤原因', 'woocommerce'));
+            }
+
+            if (!get_post_meta($wc_orderid, '_pchomepay_logisticid', true)) {
+                add_post_meta($wc_orderid, '_pchomepay_logisticid', $response_data->logistic_id);
+            }
+
+            return $response_data->history_url;
         } catch (Exception $e) {
             if ($e->getCode()) {
                 self::log('審單失敗，錯誤代碼：' . $e->getCode());
