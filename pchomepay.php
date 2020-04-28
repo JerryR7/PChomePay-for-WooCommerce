@@ -186,40 +186,6 @@ function add_awaiting_pchomepay_audit_order_statuses($order_statuses)
     return $new_order_statuses;
 }
 
-// 7-11查詢物流歷程功能
-add_action('woocommerce_order_actions', 'pchomepay_query_711_order_action');
-
-function pchomepay_query_711_order_action($actions)
-{
-    global $theorder;
-
-    if ($theorder->get_meta('_pchomepay_paytype') != 'IPL7' || $theorder->payment_method != 'pchomepay') {
-        return $actions;
-    }
-
-    $actions['wc_711_order_query'] = __('PChomePay - 超商物流歷程', 'woocommerce');
-    return $actions;
-}
-
-// 7-11物流歷程查詢
-add_action('woocommerce_order_action_wc_711_order_query', 'pchomepay_query_711_order');
-
-function pchomepay_query_711_order($order)
-{
-    require_once 'includes/PChomePayClient.php';
-    require_once 'includes/PChomePayGateway.php';
-
-    $pchomepayGateway = new  WC_Gateway_PChomePay();
-    $url = $pchomepayGateway->process_query711_history_page($order->id);
-
-    if (!$url) {
-        WC_Admin_Meta_Boxes::add_error('嘗試使用付款閘道 API 審單時發生錯誤!');
-    }
-
-    wp_safe_redirect($url);
-    exit;
-}
-
 // 顧客訂單頁面 7-11物流歷程查詢
 add_filter( 'woocommerce_my_account_my_orders_actions', 'add_my_account_my_orders_custom_action', 10, 2 );
 function add_my_account_my_orders_custom_action( $actions, $order ) {
@@ -253,4 +219,55 @@ function action_after_account_orders_js() {
         });
     </script>
     <?php
+}
+
+
+// The column content by row
+add_action( 'manage_shop_order_posts_custom_column' , 'add_custom_action_in_column_contents', 50, 2 );
+function add_custom_action_in_column_contents( $column, $post_id ) {
+
+    $order = wc_get_order( $post_id );
+
+    if ($order->payment_method == 'pchomepay') {
+        if ( $column == 'order_number' ){
+
+            if($customer_phone = $order->get_billing_phone()){
+                echo '<p><a href="tel:'.$customer_phone.'"><span class="dashicons dashicons-phone"></span> '.$customer_phone.'</a></strong></p>';
+            }
+
+            if($customer_email = $order->get_billing_email()){
+                echo '<p><a href="mailto:'.$customer_email.'"><span class="dashicons dashicons-email"></span> '.$customer_email.'</a></strong></p>';
+            }
+
+            if ($order->get_meta('_pchomepay_paytype') == 'IPL7') {
+
+                require_once 'includes/PChomePayClient.php';
+                require_once 'includes/PChomePayGateway.php';
+
+                $pchomepayGateway = new  WC_Gateway_PChomePay();
+                $url = $pchomepayGateway->process_query711_history_page($order->get_order_number());
+                $slug = 'pchomepay_ipl7';
+                // Output the button
+                echo '<p><a class="' . $slug . '" href="'.$url.'"><span class="dashicons dashicons-external ' . $slug .'"></span>查詢物流歷程</a></strong></p>';
+            }
+        }
+    }
+}
+
+// The CSS styling
+add_action( 'admin_head', 'add_custom_action_button_css' );
+function add_custom_action_button_css() {
+    $action_slug = 'pchomepay_ipl7';
+
+    ?>
+    <script>
+        jQuery(function($){
+            $('a.<?php echo $action_slug; ?>').each( function(){
+                $(this).attr('target','_blank');
+            })
+        });
+    </script>
+    <?php
+
+    echo '<style>.wc-action-button-'.$action_slug.'::after { font-family: woocommerce !important; content: "\e029" !important; }</style>';
 }
