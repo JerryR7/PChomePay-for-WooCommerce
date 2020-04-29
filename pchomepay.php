@@ -27,6 +27,7 @@ function pchomepay_gateway_init()
     function add_pchomepay_gateway_class($methods)
     {
         $methods[] = 'WC_Gateway_PChomePay';
+        $methods[] = 'WC_PI_Gateway_PChomePay';
         return $methods;
     }
 

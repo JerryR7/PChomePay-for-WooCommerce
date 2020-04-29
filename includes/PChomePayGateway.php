@@ -541,3 +541,132 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
         return $order_note;
     }
 }
+
+class WC_PI_Gateway_PChomePay extends WC_Gateway_PChomePay
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->id = 'pchomepay_pi';
+        $this->has_fields = true;
+        $this->method_title = __('PChomePay PI-拍錢包', 'woocommerce');
+        $this->method_description = '透過 PChomePay PI-拍錢包 付款，會連結到 PChomePay PI-拍錢包 付款頁面。';
+
+        $this->init_form_fields();
+        $this->init_settings();
+
+        // Define user set variables
+        $this->title = $this->get_option('title');
+        $this->description = $this->get_option('description');
+
+        if (empty($this->app_id) || empty($this->secret)) {
+            $this->enabled = false;
+        } else {
+            $this->client = new PChomePayClient($this->app_id, $this->secret, $this->sandbox_secret, $this->test_mode, self::$log_enabled);
+        }
+
+        add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
+//        add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'receive_response'));
+        add_filter( 'https_ssl_verify', '__return_false' );
+    }
+
+    public function init_form_fields()
+    {
+        $this->form_fields = array(
+            'title' => array(
+                'title' => __('Title', 'woocommerce'),
+                'type' => 'text',
+                'description' => __('This controls the title which the user sees during checkout.', 'woocommerce'),
+                'default' => __('PChomePay PI-拍錢包', 'woocommerce'),
+                'desc_tip' => true,
+            ),
+            'description' => array(
+                'title' => __('Description', 'woocommerce'),
+                'type' => 'textarea',
+                'description' => __('This controls the description which the user sees during checkout.', 'woocommerce'),
+                'default' => __('透過 PChomePay PI-拍錢包 付款，會連結到 PChomePay PI-拍錢包 付款頁面。', 'woocommerce'),
+            ),
+        );
+    }
+
+    private function get_pchomepay_pi_payment_data($order)
+    {
+        global $woocommerce;
+
+        $order_id = 'AW' . date('Ymd') . $order->get_order_number();
+        $pay_type = ['PI'];
+        $amount = ceil($order->get_total());
+        $returnUrl = $this->get_return_url($order);
+        $notifyUrl = $this->notify_url;
+        $buyer_email = $order->get_billing_email();
+
+        $items = [];
+
+        $order_items = $order->get_items();
+        foreach ($order_items as $item) {
+            $product = [];
+            $order_item = new WC_Order_Item_Product($item);
+            $product_id = ($order_item->get_product_id());
+            $product['name'] = $order_item->get_name();
+            $product['url'] = get_permalink($product_id);
+
+            $items[] = (object)$product;
+        }
+
+        $pchomepay_args = [
+            'order_id' => $order_id,
+            'pay_type' => $pay_type,
+            'amount' => $amount,
+            'return_url' => $returnUrl,
+            'notify_url' => $notifyUrl,
+            'items' => $items,
+            'buyer_email' => $buyer_email
+        ];
+
+        return apply_filters('woocommerce_pchomepay_args', $pchomepay_args);
+    }
+
+    public function process_payment($order_id)
+    {
+        try {
+            global $woocommerce;
+
+            $order = new WC_Order($order_id);
+
+            $pchomepay_args = json_encode($this->get_pchomepay_pi_payment_data($order));
+
+            if (!class_exists('PChomePayClient')) {
+                if (!require(dirname(__FILE__) . '/PChomePayClient.php')) {
+                    throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
+                }
+            }
+
+            // 建立訂單
+            $result = $this->client->postPayment($pchomepay_args);
+
+            if (!$result) {
+                self::log("交易失敗：伺服器端未知錯誤，請聯絡 PChomePay支付連。");
+                throw new Exception("嘗試使用付款閘道 API 建立訂單時發生錯誤，請聯絡網站管理員。");
+            }
+
+            // 減少庫存
+            wc_reduce_stock_levels($order_id);
+            // 清空購物車
+            $woocommerce->cart->empty_cart();
+
+            // 更新訂單狀態為等待中 (等待第三方支付網站返回)
+            add_post_meta($order_id, '_pchomepay_orderid', $result->order_id);
+            $order->update_status('pending', __('Awaiting PChomePay payment', 'woocommerce'));
+            $order->add_order_note('訂單編號：' . $result->order_id, true);
+            // 返回感謝購物頁面跳轉
+            return array(
+                'result' => 'success',
+//                'redirect' => $order->get_checkout_payment_url(true)
+                'redirect' => $result->payment_url
+            );
+
+        } catch (Exception $e) {
+            wc_add_notice(__($e->getMessage(), 'woocommerce'), 'error');
+        }
+    }
+}
