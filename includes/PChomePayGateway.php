@@ -548,16 +548,13 @@ class WC_PI_Gateway_PChomePay extends WC_Gateway_PChomePay
     {
         parent::__construct();
         $this->id = 'pchomepay_pi';
-        $this->has_fields = true;
+        $this->has_fields = false;
         $this->method_title = __('PChomePay PI-拍錢包', 'woocommerce');
         $this->method_description = '透過 PChomePay PI-拍錢包 付款，會連結到 PChomePay PI-拍錢包 付款頁面。';
 
-        $this->init_form_fields();
-        $this->init_settings();
-
         // Define user set variables
-        $this->title = $this->get_option('title');
-        $this->description = $this->get_option('description');
+        $this->title = __('PChomePay PI-拍錢包', 'woocommerce');
+        $this->description = '透過 PChomePay PI-拍錢包 付款，會連結到 PChomePay PI-拍錢包 付款頁面。';
 
         if (empty($this->app_id) || empty($this->secret)) {
             $this->enabled = false;
@@ -566,27 +563,24 @@ class WC_PI_Gateway_PChomePay extends WC_Gateway_PChomePay
         }
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
-//        add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'receive_response'));
         add_filter( 'https_ssl_verify', '__return_false' );
     }
 
     public function init_form_fields()
     {
         $this->form_fields = array(
-            'title' => array(
-                'title' => __('Title', 'woocommerce'),
-                'type' => 'text',
-                'description' => __('This controls the title which the user sees during checkout.', 'woocommerce'),
-                'default' => __('PChomePay PI-拍錢包', 'woocommerce'),
-                'desc_tip' => true,
-            ),
-            'description' => array(
-                'title' => __('Description', 'woocommerce'),
-                'type' => 'textarea',
-                'description' => __('This controls the description which the user sees during checkout.', 'woocommerce'),
-                'default' => __('透過 PChomePay PI-拍錢包 付款，會連結到 PChomePay PI-拍錢包 付款頁面。', 'woocommerce'),
-            ),
+            'enabled' => array(
+                'title' => __('Enable/Disable', 'woocommerce'),
+                'type' => 'checkbox',
+                'label' => __('Enable', 'woocommerce'),
+                'default' => 'no'
+            )
         );
+    }
+
+    public function admin_options()
+    {
+        WC_Payment_Gateway::admin_options();
     }
 
     private function get_pchomepay_pi_payment_data($order)
