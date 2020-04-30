@@ -73,8 +73,7 @@ return array(
             'ATM' => __('ATM'),
             'EACH' => __('銀行支付'),
             'ACCT' => __('支付連餘額支付'),
-            'IPL7' => __('7-11超商取貨'),
-            'PI' => __('PI 拍錢包')
+            'IPL7' => __('7-11超商取貨')
         )
     ),
     'card_installment' => array(
