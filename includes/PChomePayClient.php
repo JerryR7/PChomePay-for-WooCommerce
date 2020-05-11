@@ -70,7 +70,7 @@ class PChomePayClient
     }
 
     // 建立退款
-    public function postRefund($data, $version = 'v1')
+    public function postRefund($data, $version = 'v2')
     {
         return $this->post_request($this->getRefundUrl($version), $data);
     }

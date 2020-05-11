@@ -379,7 +379,7 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
 
             $payType = get_post_meta($order_id, '_pchomepay_paytype', true);
 
-            $version = (in_array($payType, ['IPL7', 'IPPI'])) ? 'v2' : 'v1';
+            $version = (in_array($payType, ['IPL7', 'IPPI'])) ? 'v1' : 'v2';
 
             // 退款
             $response_data = $this->client->postRefund($pchomepay_args, $version);
