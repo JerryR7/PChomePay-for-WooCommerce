@@ -26,6 +26,7 @@ class PChomePayClient
     private $getPaymentURL;
     private $getRefundURL;
     private $postRefundURL;
+    private $postV2RefundURL;
     private $postPaymentAuditURL;
     private $get711HistoryPageURL;
     private $tokenStorage;
@@ -41,7 +42,8 @@ class PChomePayClient
         $this->postPaymentURL = $baseURL . "/v1/payment";
         $this->getPaymentURL = $baseURL . "/v1/payment/{order_id}";
         $this->getRefundURL = $baseURL . "/v1/refund/{refund_id}";
-        $this->postRefundURL = $baseURL . "/v2/refund";
+        $this->postRefundURL = $baseURL . "/v1/refund";
+        $this->postV2RefundURL = $baseURL . "/v2/refund";
         $this->postPaymentAuditURL = $baseURL . "/v1/payment/audit";
         $this->get711HistoryPageURL = $baseURL . "/v1/logistic/query/{order_id}/history-page";
 
@@ -56,6 +58,11 @@ class PChomePayClient
         }
     }
 
+    private function getRefundUrl($version)
+    {
+        return $version === 'v1' ? $this->postRefundURL : $this->postV2RefundURL;
+    }
+
     // 建立訂單
     public function postPayment($data)
     {
@@ -63,9 +70,9 @@ class PChomePayClient
     }
 
     // 建立退款
-    public function postRefund($data)
+    public function postRefund($data, $version = 'v1')
     {
-        return $this->post_request($this->postRefundURL, $data);
+        return $this->post_request($this->getRefundUrl($version), $data);
     }
 
     // 查詢訂單

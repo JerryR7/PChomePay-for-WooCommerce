@@ -377,8 +377,12 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
                 throw new Exception(__('PChomePayClient Class missed.', 'woocommerce'));
             }
 
+            $payType = get_post_meta($order_id, '_pchomepay_paytype', true);
+
+            $version = (in_array($payType, ['IPL7', 'IPPI'])) ? 'v2' : 'v1';
+
             // 退款
-            $response_data = $this->client->postRefund($pchomepay_args);
+            $response_data = $this->client->postRefund($pchomepay_args, $version);
 
             if (!$response_data) {
                 self::log("退款失敗：伺服器端未知錯誤，請聯絡 PChomePay支付連。");
