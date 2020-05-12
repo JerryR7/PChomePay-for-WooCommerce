@@ -188,6 +188,10 @@ $this->log('token');
 
     private function handleResult($result)
     {
+        if (empty($result)) {
+            return true;
+        }
+
         $jsonErrMap = [
             JSON_ERROR_NONE => 'No error has occurred',
             JSON_ERROR_DEPTH => 'The maximum stack depth has been exceeded',
