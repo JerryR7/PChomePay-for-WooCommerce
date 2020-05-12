@@ -112,7 +112,7 @@ class PChomePayClient
                 'Authorization' => 'Basic ' . base64_encode($userAuth),
             ),
         ));
-
+$this->log('token');
         $body = wp_remote_retrieve_body($r);
 
         return $this->handleResult($body);
@@ -154,6 +154,7 @@ class PChomePayClient
 
     protected function post_request($method, $postdata)
     {
+
         $token = $this->validateTokenExpiredIn();
 
         $r = wp_remote_post($method, array(
@@ -164,6 +165,7 @@ class PChomePayClient
             'body' => $postdata,
         ));
 
+        $this->log($r);
         $body = wp_remote_retrieve_body($r);
 
         return $this->handleResult($body);
