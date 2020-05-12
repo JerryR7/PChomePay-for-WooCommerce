@@ -400,9 +400,8 @@ class WC_Gateway_PChomePay extends WC_Payment_Gateway
                         add_post_meta($order_id, '_pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url);
                     }
                 }
-
-                $wcOrder->add_order_note('退款編號：' . $response_data->refund_id, true);
             }
+            $wcOrder->add_order_note('退款編號：' . json_decode($pchomepay_args)->refund_id, true);
 
             return true;
         } catch (Exception $e) {
@@ -814,9 +813,9 @@ class WC_PI_Gateway_PChomePay extends WC_Gateway_PChomePay
                         add_post_meta($order_id, '_pchomepay_refund_url', $response_data->refund_id . ' : ' . $response_data->redirect_url);
                     }
                 }
-
-                $wcOrder->add_order_note('退款編號：' . $response_data->refund_id, true);
             }
+
+            $wcOrder->add_order_note('退款編號：' . json_decode($pchomepay_args)->refund_id, true);
 
             return true;
         } catch (Exception $e) {
