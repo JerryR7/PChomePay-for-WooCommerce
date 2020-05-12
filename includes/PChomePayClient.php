@@ -165,7 +165,6 @@ $this->log('token');
             'body' => $postdata,
         ));
 
-        $this->log($r);
         $body = wp_remote_retrieve_body($r);
 
         return $this->handleResult($body);

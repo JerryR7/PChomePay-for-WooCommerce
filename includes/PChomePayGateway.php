@@ -566,6 +566,7 @@ class WC_PI_Gateway_PChomePay extends WC_Gateway_PChomePay
         }
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
+        add_action('woocommerce_api_' . strtolower(get_class($this)), array($this, 'receive_response'));
         add_filter( 'https_ssl_verify', '__return_false' );
     }
 
@@ -696,36 +697,7 @@ class WC_PI_Gateway_PChomePay extends WC_Gateway_PChomePay
         $order = new WC_Order($wc_order_id);
 
         # 紀錄訂單付款方式
-        switch ($order_data->pay_type) {
-            case 'ATM':
-                $pay_type_note = 'ATM 付款';
-                $pay_type_note .= '<br>ATM虛擬帳號: ' . $order_data->payment_info->bank_code . ' - ' . $order_data->payment_info->virtual_account;
-                break;
-            case 'CARD':
-                if ($order_data->payment_info->installment == 1) {
-                    $pay_type_note = '信用卡 付款 (一次付清)';
-                } else {
-                    $pay_type_note = '信用卡 分期付款 (' . $order_data->payment_info->installment . '期)';
-                }
-
-                if ($this->card_last_number) $pay_type_note .= '<br>末四碼: ' . $order_data->payment_info->card_last_number;
-
-                break;
-            case 'ACCT':
-                $pay_type_note = '支付連餘額 付款';
-                break;
-            case 'EACH':
-                $pay_type_note = '銀行支付 付款';
-                break;
-            case 'IPL7':
-                $pay_type_note = '7-11超商 付款';
-                break;
-            case 'IPPI':
-                $pay_type_note = 'PI拍錢包 付款';
-                break;
-            default:
-                $pay_type_note = '未選擇付款方式';
-        }
+        $pay_type_note = 'PI拍錢包 付款';
 
         if (!get_post_meta($wc_order_id, '_pchomepay_paytype', true)) {
             add_post_meta($wc_order_id, '_pchomepay_paytype', $order_data->pay_type);
