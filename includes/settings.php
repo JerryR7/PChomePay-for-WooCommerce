@@ -67,7 +67,7 @@ return array(
     'payment_methods' => array(
         'title' => __('付款方式', 'woocommerce'),
         'type' => 'multiselect',
-        'description' => __('按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式<br><br>PI拍錢包僅支援單一付款方式。', 'woocommerce'),
+        'description' => __('按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式<br><br>7-11超商取貨不適用金額低於65元之訂單。', 'woocommerce'),
         'options' => array(
             'CARD' => __('信用卡'),
             'ATM' => __('ATM'),
@@ -79,7 +79,7 @@ return array(
     'card_installment' => array(
         'title' => __('信用卡分期', 'woocommerce'),
         'type' => 'multiselect',
-        'description' => __('按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式<br><br>信用卡分期不適用於金額低於30元之訂單<br>低於30元之訂單於支付連信用卡付款頁面僅會顯示一次付清選項。', 'woocommerce'),
+        'description' => __('按下 CTRL 與 滑鼠右鍵 以選擇多種付款方式<br><br>信用卡分期不適用於金額低於30元之訂單。', 'woocommerce'),
         'options' => array(
             'CRD_0' => __('一次付清', 'woocommerce'),
             'CRD_3' => __('3 期', 'woocommerce'),
