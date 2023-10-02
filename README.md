@@ -1,22 +1,46 @@
-# PChomePay-for-WooCommerce
+# PChomePay for WooCommerce Plugin
 
+![Plugin Version](https://img.shields.io/badge/version-1.6.2-brightgreen)
 ~Current Version:1.6.2~
 
-This plugin can quickly add [PChomePay](https://www.pchomepay.com.tw/) payment to your WooCommerce site!
+The PChomePay for WooCommerce plugin allows you to seamlessly integrate PChomePay payment gateway into your WooCommerce-powered website, enhancing the payment options available to your customers.
 
 ## Features
 
-Currently supports the following features:
+This plugin offers several key features for your WooCommerce store:
 
-* Requesting payments
-* Refunds
-* Order audit
+1. **Payment Requests**: Easily accept payments from your customers through the PChomePay gateway, providing a convenient and secure payment option.
 
-This plugin supports refunds directly from the WooCommerce Order backend.\
-When you processing a refund within its payment method is ATM, remember to give the refund URL to your purchaser.\
-And the purchaser will be lead to a refund form via the URL to complete the refund procedure.\
-You can find the refund URL in order page which meta title is "pchomepay_refund_url".
+2. **Refunds**: Manage refunds efficiently directly from your WooCommerce Order backend. When processing a refund with the payment method set to ATM, you can provide the refund URL to your customers. They can then follow the URL to a refund form and complete the refund process. You can find the refund URL in the order page under the meta title "pchomepay_refund_url."
 
-## Feedbacks?
+3. **Order Audit**: Keep track of your orders and payment transactions with a comprehensive order audit system.
 
-Please raise new issues for any problems or feedbacks you may have. Fixes and enhancements are welcomed through pull requests!
+## Getting Started
+
+To get started with the PChomePay for WooCommerce plugin, follow these steps:
+
+1. Install the plugin on your WooCommerce-powered website.
+
+2. Configure the plugin settings, including your PChomePay API credentials and other relevant options.
+
+3. Enable PChomePay as a payment method in your WooCommerce settings.
+
+4. Start accepting payments seamlessly through PChomePay!
+
+## Support and Feedback
+
+We value your feedback and are here to assist you. If you encounter any issues, have questions, or would like to provide feedback, please do the following:
+
+- **Raise Issues**: If you encounter problems or have suggestions for improvement, please create new issues in the GitHub repository for this plugin.
+
+- **Contribute**: We welcome fixes and enhancements. If you are a developer and would like to contribute, feel free to submit pull requests to the GitHub repository.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Enhance your WooCommerce store's payment options with the PChomePay for WooCommerce plugin and provide a better shopping experience for your customers. Thank you for choosing our plugin!
+
+---
+
+**Note**: Make sure to keep the plugin updated to access the latest features and enhancements.
